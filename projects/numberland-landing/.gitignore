@@ -1,2 +1,6 @@
 node_modules/
 package-lock.json
+
+# Built preview payload (rebuilt on demand)
+artifact.html
+fonts-inline.css

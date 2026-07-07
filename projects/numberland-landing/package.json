@@ -8,7 +8,8 @@
     "watch": "tailwindcss -i ./src.css -o ./tailwind.css --watch",
     "serve": "python3 -m http.server 8123",
     "dev": "npm run build && npm run serve",
-    "start": "npm run dev"
+    "start": "npm run dev",
+    "preview:build": "npm run build && python3 scripts/inline_fonts.py && python3 scripts/build_artifact.py"
   },
   "devDependencies": {
     "tailwindcss": "^3.4.13"

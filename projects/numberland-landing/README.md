@@ -49,3 +49,20 @@ localStorage.removeItem('numberland:state:v1'); location.reload();
 - `src.css` — Tailwind entry (`@tailwind base/components/utilities`)
 - `tailwind.css` — compiled output (referenced by `index.html`)
 - `tailwind.config.js` — tokens + custom breakpoints
+- `scripts/inline_fonts.py` — fetches Google Fonts + inlines each WOFF2 as a
+  data URI into `fonts-inline.css` (gitignored — regenerated on demand).
+- `scripts/build_artifact.py` — assembles a single self-contained
+  `artifact.html` (fonts + Tailwind + custom CSS all inlined) suitable for
+  Claude artifact hosting or any environment that can't reach local files.
+
+## Preview build (single self-contained HTML)
+
+For environments that need a fully self-contained page (Claude artifact
+hosting, sandboxed previews, offline demos):
+
+```bash
+npm run preview:build
+```
+
+Produces `artifact.html` (~800 KB, all fonts + CSS + JS inlined). Both the
+generated `artifact.html` and `fonts-inline.css` are gitignored.
