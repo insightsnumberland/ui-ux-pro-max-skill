@@ -932,6 +932,473 @@
       outline: 2px solid #60A5FA;
       outline-offset: 3px;
     }
+
+    /* ===================================================================
+       STEP 3 · Mission 01 — Intent Discovery
+       =================================================================== */
+
+    .mission-intent {
+      background:
+        radial-gradient(1100px 500px at 50% 0%, rgba(139, 92, 246, 0.10), transparent 65%),
+        radial-gradient(700px 500px at 10% 40%, rgba(75, 158, 255, 0.08), transparent 60%),
+        radial-gradient(700px 500px at 90% 70%, rgba(34, 211, 238, 0.08), transparent 60%),
+        linear-gradient(180deg, #04060F 0%, #05091A 55%, #04060F 100%);
+    }
+
+    /* Status readout row */
+    .status-readout .stat-item {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .status-readout .stat-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      color: #7B8BA8;
+      text-transform: uppercase;
+    }
+    .status-readout .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      color: #E7ECF7;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status-readout .stat-sep {
+      color: rgba(75, 158, 255, 0.4);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .status-readout .stat-path {
+      color: #60A5FA;
+      max-width: 22ch;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Mission question */
+    .question-label { justify-content: center; }
+    @keyframes scan-blip {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+    .question-label svg { animation: scan-blip 2.4s ease-in-out infinite; }
+
+    /* Mission arena grid */
+    .mission-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr;
+      align-items: stretch;
+    }
+    @media (min-width: 640px) {
+      .mission-grid { grid-template-columns: 1fr 1fr; gap: 18px; }
+    }
+    @media (min-width: 1024px) {
+      .mission-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+    }
+    .player-core-bar { grid-column: 1 / -1; }
+
+    /* ---------- Mission target (choice) ---------- */
+    .mission-target {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      text-align: right;
+      background: linear-gradient(180deg, rgba(15, 21, 38, 0.75), rgba(10, 14, 26, 0.9));
+      border: 1px solid rgba(75, 158, 255, 0.16);
+      border-radius: 18px;
+      padding: 20px 20px 18px;
+      color: inherit;
+      cursor: pointer;
+      overflow: hidden;
+      isolation: isolate;
+      transition:
+        transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+        border-color 0.35s ease,
+        box-shadow 0.4s ease,
+        background 0.4s ease,
+        opacity 0.4s ease;
+      will-change: transform;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mission-target::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%),
+        rgba(var(--accent-rgb, 75, 158, 255), 0.14), transparent 55%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .mission-target > * { position: relative; z-index: 1; }
+
+    /* Crosshair corner marks — game "target lock" feel */
+    .mission-target .target-corner {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border: 1px solid rgba(var(--accent-rgb, 75, 158, 255), 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+    .mission-target .target-corner.tl { top: 8px; left: 8px; border-right: none; border-bottom: none; border-top-left-radius: 4px; }
+    .mission-target .target-corner.tr { top: 8px; right: 8px; border-left: none; border-bottom: none; border-top-right-radius: 4px; }
+    .mission-target .target-corner.bl { bottom: 8px; left: 8px; border-right: none; border-top: none; border-bottom-left-radius: 4px; }
+    .mission-target .target-corner.br { bottom: 8px; right: 8px; border-left: none; border-top: none; border-bottom-right-radius: 4px; }
+    .mission-target:hover .target-corner,
+    .mission-target:focus-visible .target-corner { opacity: 0.9; }
+    .mission-target:hover .target-corner.tl { transform: translate(-3px, -3px); }
+    .mission-target:hover .target-corner.tr { transform: translate(3px, -3px); }
+    .mission-target:hover .target-corner.bl { transform: translate(-3px, 3px); }
+    .mission-target:hover .target-corner.br { transform: translate(3px, 3px); }
+
+    /* Hover state */
+    .mission-target:hover,
+    .mission-target:focus-visible {
+      border-color: rgba(var(--accent-rgb, 75, 158, 255), 0.55);
+      transform: translateY(-3px);
+      box-shadow:
+        0 10px 34px rgba(0, 0, 0, 0.35),
+        0 0 50px rgba(var(--accent-rgb, 75, 158, 255), 0.16);
+    }
+    .mission-target:hover::before,
+    .mission-target:focus-visible::before { opacity: 1; }
+    .mission-target:hover .target-icon-halo { transform: scale(1.08); }
+    .mission-target:hover .target-icon { transform: rotate(-3deg) scale(1.08); }
+
+    @media (max-width: 767px) {
+      .mission-target:hover { transform: none; }
+    }
+
+    /* Accent variants */
+    .mission-target[data-accent="blue"]    { --accent-rgb: 75, 158, 255; }
+    .mission-target[data-accent="violet"]  { --accent-rgb: 139, 92, 246; }
+    .mission-target[data-accent="cyan"]    { --accent-rgb: 34, 211, 238; }
+    .mission-target[data-accent="gold"]    { --accent-rgb: 245, 184, 64; }
+    .mission-target[data-accent="magenta"] { --accent-rgb: 217, 112, 240; }
+
+    /* Icon halo — hexagonal */
+    .target-icon-halo {
+      position: relative;
+      width: 60px;
+      height: 60px;
+      clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 30% 30%,
+        rgba(var(--accent-rgb, 75, 158, 255), 0.42),
+        rgba(10, 14, 26, 0.95) 65%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .target-icon-halo::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+      background:
+        conic-gradient(from 210deg,
+          rgba(var(--accent-rgb), 0) 0deg,
+          rgba(var(--accent-rgb), 0.5) 30deg,
+          rgba(var(--accent-rgb), 0) 90deg,
+          rgba(var(--accent-rgb), 0.35) 210deg,
+          rgba(var(--accent-rgb), 0) 260deg);
+      opacity: 0.6;
+      z-index: -1;
+    }
+    .target-icon {
+      width: 26px;
+      height: 26px;
+      color: rgb(var(--accent-rgb, 75, 158, 255));
+      filter: drop-shadow(0 0 6px rgba(var(--accent-rgb, 75, 158, 255), 0.5));
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Target meta labels */
+    .target-role {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.28em;
+      color: rgba(199, 214, 245, 0.5);
+      text-transform: uppercase;
+    }
+    .target-title {
+      font-family: 'Vazirmatn', sans-serif;
+      font-weight: 700;
+      font-size: 17px;
+      color: #E7ECF7;
+      line-height: 1.35;
+    }
+    .target-desc {
+      font-family: 'Vazirmatn', sans-serif;
+      font-size: 12.5px;
+      color: #8B99B8;
+      line-height: 1.75;
+    }
+
+    /* XP badge on target */
+    .target-xp {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(var(--accent-rgb, 75, 158, 255), 0.12);
+      border: 1px solid rgba(var(--accent-rgb, 75, 158, 255), 0.35);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: rgb(var(--accent-rgb, 75, 158, 255));
+    }
+    .target-xp svg { width: 10px; height: 10px; }
+
+    /* Selection states */
+    .mission-target.is-selecting {
+      animation: target-lock 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+      border-color: rgba(var(--accent-rgb), 0.9);
+    }
+    @keyframes target-lock {
+      0% { transform: scale(1); box-shadow: 0 12px 40px rgba(0,0,0,0.35); }
+      45% { transform: scale(0.98); box-shadow: 0 0 90px rgba(var(--accent-rgb), 0.55), inset 0 0 40px rgba(var(--accent-rgb), 0.18); }
+      100% { transform: scale(1); box-shadow: 0 12px 40px rgba(0,0,0,0.35); }
+    }
+    .mission-target.is-selected {
+      border-color: rgba(34, 211, 238, 0.6) !important;
+      background: linear-gradient(180deg, rgba(18, 32, 46, 0.9), rgba(11, 20, 30, 0.95));
+      box-shadow:
+        0 14px 44px rgba(0,0,0,0.35),
+        0 0 60px rgba(34, 211, 238, 0.2),
+        inset 0 0 30px rgba(34, 211, 238, 0.07);
+    }
+    .mission-target.is-selected .target-corner {
+      opacity: 1;
+      border-color: rgba(34, 211, 238, 0.85);
+    }
+    .mission-target.is-selected .target-icon-halo {
+      background: radial-gradient(circle at 30% 30%,
+        rgba(34, 211, 238, 0.35),
+        rgba(10, 14, 26, 0.95) 65%);
+    }
+    .mission-target.is-selected .target-icon {
+      color: #22D3EE;
+      filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.6));
+    }
+    .mission-target.is-selected .target-xp {
+      background: rgba(34, 211, 238, 0.14);
+      border-color: rgba(34, 211, 238, 0.5);
+      color: #22D3EE;
+    }
+    .mission-target.is-dimmed { opacity: 0.4; filter: saturate(0.55); }
+    .mission-target.is-dimmed:hover { opacity: 0.75; filter: saturate(0.9); }
+
+    /* ---------- Player Core Bar ---------- */
+    .player-core-bar {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      margin: 6px 0;
+      background: linear-gradient(180deg, rgba(15, 21, 38, 0.55), rgba(10, 14, 26, 0.75));
+      border: 1px solid rgba(75, 158, 255, 0.18);
+      border-radius: 20px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    @media (min-width: 640px) {
+      .player-core-bar { grid-template-columns: 1fr auto 1fr; padding: 18px 26px; }
+    }
+    .pcb-side {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: center;
+    }
+    .pcb-side.pcb-left { justify-content: flex-end; }
+    .pcb-side.pcb-right { justify-content: flex-start; }
+    @media (max-width: 639px) {
+      .pcb-side { justify-content: center; }
+    }
+    .pcb-line {
+      flex: 1 1 auto;
+      height: 1px;
+      max-width: 120px;
+      background: linear-gradient(90deg, transparent, rgba(75, 158, 255, 0.55), transparent);
+    }
+    .pcb-stat {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #E7ECF7;
+      white-space: nowrap;
+    }
+    .pcb-stat-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      color: #7B8BA8;
+      text-transform: uppercase;
+    }
+    .pcb-stat-value { color: #E7ECF7; font-weight: 500; }
+    .pcb-stat.pcb-path .pcb-stat-value { color: #60A5FA; }
+    .pcb-badge {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .pcb-halo {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(75, 158, 255, 0.55), rgba(10, 14, 26, 0.95) 65%);
+      border: 1px solid rgba(75, 158, 255, 0.55);
+      box-shadow: 0 0 26px rgba(75, 158, 255, 0.28), inset 0 0 18px rgba(75, 158, 255, 0.15);
+    }
+    .pcb-halo::before {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      border: 1px dashed rgba(75, 158, 255, 0.22);
+      animation: spin-slow 30s linear infinite;
+    }
+    .pcb-halo::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg,
+        rgba(75, 158, 255, 0) 0deg,
+        rgba(75, 158, 255, 0.35) 60deg,
+        rgba(75, 158, 255, 0) 120deg,
+        rgba(139, 92, 246, 0.35) 240deg,
+        rgba(75, 158, 255, 0) 300deg);
+      -webkit-mask: radial-gradient(circle, transparent 62%, black 63%);
+              mask: radial-gradient(circle, transparent 62%, black 63%);
+      animation: spin-slow 10s linear infinite;
+    }
+    .pcb-logo {
+      position: relative;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 22px;
+      background: linear-gradient(135deg, #E7ECF7 0%, #60A5FA 60%, #22D3EE 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      line-height: 1;
+    }
+    .pcb-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: #7B8BA8;
+    }
+
+    /* ---------- Mission complete banner ---------- */
+    .mission-complete-banner {
+      margin-top: 24px;
+      overflow: hidden;
+      opacity: 0;
+      max-height: 0;
+      transition: opacity 0.5s ease, max-height 0.5s ease, margin-top 0.4s ease;
+    }
+    .mission-complete-banner.is-visible {
+      opacity: 1;
+      max-height: 320px;
+      margin-top: 28px;
+    }
+    .mission-complete-banner .banner-inner {
+      position: relative;
+      display: grid;
+      gap: 14px;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      padding: 18px 22px;
+      border-radius: 16px;
+      background: linear-gradient(90deg, rgba(34, 211, 238, 0.12), rgba(75, 158, 255, 0.06));
+      border: 1px solid rgba(34, 211, 238, 0.45);
+      box-shadow: 0 0 40px rgba(34, 211, 238, 0.15);
+    }
+    @media (max-width: 639px) {
+      .mission-complete-banner .banner-inner {
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto;
+      }
+    }
+    .mission-complete-banner .banner-check {
+      display: flex;
+      width: 40px;
+      height: 40px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(34, 211, 238, 0.18);
+      border: 1px solid rgba(34, 211, 238, 0.55);
+      color: #22D3EE;
+      filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.55));
+    }
+    .mission-complete-banner .banner-check svg { width: 20px; height: 20px; }
+    .mission-complete-banner .banner-title {
+      font-family: 'Vazirmatn', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      color: #E7ECF7;
+    }
+    .mission-complete-banner .banner-sub {
+      font-family: 'Vazirmatn', sans-serif;
+      font-size: 12.5px;
+      color: #8B99B8;
+      margin-top: 2px;
+    }
+    .mission-complete-banner .banner-recommend {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #22D3EE;
+      margin-top: 4px;
+      letter-spacing: 0.04em;
+    }
+    .mission-complete-banner .banner-xp {
+      justify-self: end;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      color: #22D3EE;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(34, 211, 238, 0.14);
+      border: 1px solid rgba(34, 211, 238, 0.55);
+    }
+    @media (max-width: 639px) {
+      .mission-complete-banner .banner-xp {
+        grid-column: 1 / -1;
+        justify-self: stretch;
+        text-align: center;
+      }
+    }
+
+    /* Focus outline */
+    .mission-target:focus-visible {
+      outline: 2px solid #60A5FA;
+      outline-offset: 3px;
+    }
   </style>
 </head>
 <body class="no-tap-highlight">
@@ -1177,7 +1644,7 @@
                   <span class="font-mono text-[10px] text-faint">LVL_00</span>
                 </div>
                 <div class="flex items-baseline gap-3">
-                  <span id="hudLevel" class="level-number font-game font-bold text-6xl text-text leading-none">0</span>
+                  <span id="hudLevel" data-bind="level" class="level-number font-game font-bold text-6xl text-text leading-none">0</span>
                   <span class="font-mono text-xs text-muted">/ 100</span>
                 </div>
               </div>
@@ -1200,12 +1667,12 @@
                 <div class="flex items-center justify-between mb-2">
                   <span class="font-game text-[10px] tracking-[0.24em] text-muted">XP</span>
                   <span class="font-mono text-[11px] text-text">
-                    <span id="hudXpValue">0</span>
+                    <span id="hudXpValue" data-bind="xp-value">0</span>
                     <span class="text-faint">/ 1000</span>
                   </span>
                 </div>
                 <div class="xp-track h-2.5 rounded-full">
-                  <div id="hudXpFill" class="xp-fill h-full rounded-full" style="width: 0%;"></div>
+                  <div id="hudXpFill" data-bind="xp-fill" class="xp-fill h-full rounded-full" style="width: 0%;"></div>
                 </div>
               </div>
 
@@ -1531,6 +1998,274 @@
     </div>
   </section>
 
+  <!-- ==================================================================
+       STEP 3 · MISSION 01 — Intent Discovery
+       ================================================================== -->
+  <section id="missionIntent" class="mission-intent relative py-20 sm:py-24 lg:py-28 overflow-hidden" aria-labelledby="missionIntentTitle">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 stars opacity-40 pointer-events-none" aria-hidden="true"></div>
+    <div class="absolute inset-0 grid-lines opacity-30 pointer-events-none" aria-hidden="true"></div>
+
+    <div class="relative z-10 max-w-6xl mx-auto px-5 sm:px-8 lg:px-10">
+
+      <!-- Section header -->
+      <div class="text-center mb-10 sm:mb-12">
+        <div class="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full mission-pill border border-primary/25 backdrop-blur-md">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary mission-pill-dot"></span>
+          <span class="font-mono text-[10px] tracking-[0.28em] text-primary-glow">MISSION_01</span>
+          <span class="w-px h-3 bg-primary/25"></span>
+          <span class="font-fa text-[11px] text-text/85">ماموریت ۰۱</span>
+        </div>
+
+        <h2 id="missionIntentTitle" class="font-fa font-bold text-[32px] leading-[1.22] xs:text-[38px] sm:text-[46px] md:text-[54px] lg:text-[58px] tracking-tight mb-5 max-w-3xl mx-auto">
+          <span class="title-line">بزرگ‌ترین چالش دیجیتال</span>
+          <span class="title-accent">تو چیه؟</span>
+        </h2>
+
+        <p class="font-fa text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
+          کمکت می‌کنیم سریع‌ترین مسیر رسیدن به سرویس مورد نیازت رو پیدا کنی.
+        </p>
+
+        <!-- Progress + player status -->
+        <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-8">
+          <!-- Progress dots -->
+          <div class="inline-flex items-center gap-3">
+            <div class="flex items-center gap-1.5" dir="ltr">
+              <span class="mi-progress-dot path-progress-dot w-1.5 h-1.5 rounded-full bg-primary/25 is-done"></span>
+              <span class="mi-progress-dot path-progress-dot w-1.5 h-1.5 rounded-full bg-primary" style="box-shadow: 0 0 10px rgba(75,158,255,0.75);"></span>
+              <span class="mi-progress-dot path-progress-dot w-1.5 h-1.5 rounded-full bg-primary/25"></span>
+            </div>
+            <span class="font-fa text-xs sm:text-sm text-muted">۲ از ۳ ماموریت</span>
+          </div>
+
+          <div class="hidden sm:block w-px h-6 bg-primary/20"></div>
+
+          <!-- Player status readout -->
+          <div class="status-readout flex items-center gap-3 sm:gap-4 flex-wrap justify-center">
+            <div class="stat-item">
+              <span class="stat-label">LEVEL</span>
+              <span class="stat-value" data-bind="level">0</span>
+            </div>
+            <span class="stat-sep">·</span>
+            <div class="stat-item" dir="ltr">
+              <span class="stat-label">XP</span>
+              <span class="stat-value" data-bind="xp-full">0 / 1000</span>
+            </div>
+            <span class="stat-sep">·</span>
+            <div class="stat-item">
+              <span class="stat-label">PATH</span>
+              <span class="stat-value stat-path" data-bind="path-fa">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mission question -->
+      <div class="mission-question text-center mb-10 sm:mb-12 lg:mb-14">
+        <div class="question-label inline-flex items-center gap-2 mb-3">
+          <svg class="w-3 h-3 text-primary-glow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 3v18M3 12h18"/>
+          </svg>
+          <span class="font-mono text-[10px] tracking-[0.28em] text-primary-glow">SCAN · ماموریت فعال</span>
+        </div>
+        <p class="font-fa text-lg sm:text-xl lg:text-2xl text-text max-w-2xl mx-auto leading-relaxed">
+          کدوم مشکل بیشتر جلوی دسترسی تو به دنیای دیجیتال رو گرفته؟
+        </p>
+      </div>
+
+      <!-- Mission arena -->
+      <div class="mission-arena relative">
+        <div class="mission-grid">
+
+          <!-- Row 1 -->
+          <!-- Payment -->
+          <button type="button" class="mission-target" data-intent="payment" data-accent="blue">
+            <span class="target-corner tl"></span><span class="target-corner tr"></span>
+            <span class="target-corner bl"></span><span class="target-corner br"></span>
+            <div class="flex items-start justify-between mb-4">
+              <div class="target-icon-halo">
+                <svg class="target-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="6" width="18" height="13" rx="2"/>
+                  <path d="M3 10h18"/>
+                  <path d="M7 15h3"/>
+                  <circle cx="17" cy="15" r="1.4"/>
+                </svg>
+              </div>
+              <span class="target-xp" dir="ltr">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3L4 14h6l-1 7 9-11h-6z"/></svg>
+                +120 XP
+              </span>
+            </div>
+            <div class="target-role mb-1">TARGET · 01</div>
+            <h3 class="target-title mb-2">پرداخت بین‌المللی</h3>
+            <p class="target-desc">برای خرید سرویس‌های خارجی مشکل پرداخت دارم</p>
+          </button>
+
+          <!-- AI -->
+          <button type="button" class="mission-target" data-intent="ai" data-accent="violet">
+            <span class="target-corner tl"></span><span class="target-corner tr"></span>
+            <span class="target-corner bl"></span><span class="target-corner br"></span>
+            <div class="flex items-start justify-between mb-4">
+              <div class="target-icon-halo">
+                <svg class="target-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4"/>
+                  <path d="M10 11h4M10 13h4"/>
+                  <path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>
+                </svg>
+              </div>
+              <span class="target-xp" dir="ltr">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3L4 14h6l-1 7 9-11h-6z"/></svg>
+                +120 XP
+              </span>
+            </div>
+            <div class="target-role mb-1">TARGET · 02</div>
+            <h3 class="target-title mb-2">اکانت هوش مصنوعی</h3>
+            <p class="target-desc">به ابزارهای AI حرفه‌ای نیاز دارم</p>
+          </button>
+
+          <!-- Virtual number -->
+          <button type="button" class="mission-target" data-intent="virtualnumber" data-accent="cyan">
+            <span class="target-corner tl"></span><span class="target-corner tr"></span>
+            <span class="target-corner bl"></span><span class="target-corner br"></span>
+            <div class="flex items-start justify-between mb-4">
+              <div class="target-icon-halo">
+                <svg class="target-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/>
+                  <path d="M3 12h18"/>
+                  <path d="M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>
+                </svg>
+              </div>
+              <span class="target-xp" dir="ltr">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3L4 14h6l-1 7 9-11h-6z"/></svg>
+                +120 XP
+              </span>
+            </div>
+            <div class="target-role mb-1">TARGET · 03</div>
+            <h3 class="target-title mb-2">شماره خارجی</h3>
+            <p class="target-desc">برای ثبت‌نام و احراز هویت شماره مجازی لازم دارم</p>
+          </button>
+
+          <!-- Player Core Bar (middle divider) -->
+          <div class="player-core-bar" role="group" aria-label="پروفایل بازیکن">
+            <div class="pcb-side pcb-left">
+              <div class="pcb-stat">
+                <span class="pcb-stat-label">LEVEL</span>
+                <span class="pcb-stat-value" data-bind="level">0</span>
+              </div>
+              <span class="pcb-line" aria-hidden="true"></span>
+            </div>
+            <div class="pcb-badge">
+              <div class="pcb-halo"><span class="pcb-logo">N</span></div>
+              <span class="pcb-tag">PLAYER CORE</span>
+            </div>
+            <div class="pcb-side pcb-right">
+              <span class="pcb-line" aria-hidden="true"></span>
+              <div class="pcb-stat" dir="ltr">
+                <span class="pcb-stat-label">XP</span>
+                <span class="pcb-stat-value" data-bind="xp-full">0 / 1000</span>
+              </div>
+              <span class="pcb-line hidden sm:block" aria-hidden="true"></span>
+              <div class="pcb-stat pcb-path">
+                <span class="pcb-stat-label">PATH</span>
+                <span class="pcb-stat-value" data-bind="path-fa">—</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2 -->
+          <!-- Premium -->
+          <button type="button" class="mission-target" data-intent="premium" data-accent="gold">
+            <span class="target-corner tl"></span><span class="target-corner tr"></span>
+            <span class="target-corner bl"></span><span class="target-corner br"></span>
+            <div class="flex items-start justify-between mb-4">
+              <div class="target-icon-halo">
+                <svg class="target-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 8l3 6 5-8 5 8 3-6-2 12H6z"/>
+                  <path d="M6 20h12"/>
+                </svg>
+              </div>
+              <span class="target-xp" dir="ltr">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3L4 14h6l-1 7 9-11h-6z"/></svg>
+                +120 XP
+              </span>
+            </div>
+            <div class="target-role mb-1">TARGET · 04</div>
+            <h3 class="target-title mb-2">اشتراک پریمیوم</h3>
+            <p class="target-desc">می‌خوام از سرویس‌های جهانی استفاده کنم</p>
+          </button>
+
+          <!-- Gaming -->
+          <button type="button" class="mission-target" data-intent="gaming" data-accent="cyan">
+            <span class="target-corner tl"></span><span class="target-corner tr"></span>
+            <span class="target-corner bl"></span><span class="target-corner br"></span>
+            <div class="flex items-start justify-between mb-4">
+              <div class="target-icon-halo">
+                <svg class="target-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M6 8h12a3 3 0 013 3v3a3 3 0 01-3 3h-2l-2-2H10l-2 2H6a3 3 0 01-3-3v-3a3 3 0 013-3z"/>
+                  <path d="M8.5 12h2"/>
+                  <path d="M9.5 11v2"/>
+                  <circle cx="15" cy="11.5" r="0.9"/>
+                  <circle cx="17" cy="13.5" r="0.9"/>
+                </svg>
+              </div>
+              <span class="target-xp" dir="ltr">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3L4 14h6l-1 7 9-11h-6z"/></svg>
+                +120 XP
+              </span>
+            </div>
+            <div class="target-role mb-1">TARGET · 05</div>
+            <h3 class="target-title mb-2">گیم و سرگرمی</h3>
+            <p class="target-desc">برای بازی و گیفت‌کارت دنبال راه‌حل هستم</p>
+          </button>
+
+          <!-- All -->
+          <button type="button" class="mission-target" data-intent="all" data-accent="magenta">
+            <span class="target-corner tl"></span><span class="target-corner tr"></span>
+            <span class="target-corner bl"></span><span class="target-corner br"></span>
+            <div class="flex items-start justify-between mb-4">
+              <div class="target-icon-halo">
+                <svg class="target-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/>
+                  <circle cx="12" cy="12" r="4"/>
+                  <path d="M4 4l4 4M16 16l4 4M4 20l4-4M16 8l4-4"/>
+                </svg>
+              </div>
+              <span class="target-xp" dir="ltr">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3L4 14h6l-1 7 9-11h-6z"/></svg>
+                +120 XP
+              </span>
+            </div>
+            <div class="target-role mb-1">TARGET · 06</div>
+            <h3 class="target-title mb-2">دسترسی همه‌جانبه</h3>
+            <p class="target-desc">چند سرویس مختلف نیاز دارم</p>
+          </button>
+
+        </div>
+
+        <!-- Mission complete banner -->
+        <div class="mission-complete-banner" id="missionCompleteBanner" role="status" aria-live="polite">
+          <div class="banner-inner">
+            <div class="banner-check" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+            </div>
+            <div>
+              <div class="banner-title">ماموریت کامل شد</div>
+              <div class="banner-sub">
+                <span dir="ltr">+120 XP</span> دریافت کردی · پروفایل شخصی‌سازی به‌روزرسانی شد
+              </div>
+              <div class="banner-recommend">
+                <span>پیشنهاد برای تو:</span>
+                <span data-bind="recommended">—</span>
+              </div>
+            </div>
+            <div class="banner-xp" dir="ltr">+120 XP</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Screen reader status announcer -->
   <div id="srStatus" class="sr-only" aria-live="polite"></div>
 
@@ -1691,10 +2426,33 @@
       data: {
         heroStarted: false,
         selectedPath: null,
+        userIntent: null,           // STEP 3
+        playerProfile: null,        // STEP 3 — { interest, intent, recommendedCategory }
+        missionsCompleted: [],      // STEP 3 — keys of completed missions
         xp: 0,
-        mission: 'NOT_STARTED', // NOT_STARTED | IN_PROGRESS | PATH_SELECTED
+        mission: 'NOT_STARTED', // NOT_STARTED | IN_PROGRESS | PATH_SELECTED | INTENT_SELECTED
       },
       MAX_XP: 1000,
+
+      /* Persian labels for each path id (used by status readouts) */
+      PATH_FA: {
+        ai: 'شهر هوش مصنوعی',
+        money: 'منطقه پرداخت جهانی',
+        game: 'جزیره گیمرها',
+        access: 'منطقه دسترسی',
+        premium: 'باشگاه پریمیوم',
+        gift: 'خزانه گیفت‌کارت',
+      },
+
+      /* Intent → recommender profile (reusable for future recommendation engine) */
+      INTENT_PROFILES: {
+        payment:       { interest: 'Payment',       intent: 'transaction',   recommendedCategory: 'Visa / Mastercard' },
+        ai:            { interest: 'AI',            intent: 'productivity',  recommendedCategory: 'AI Accounts' },
+        virtualnumber: { interest: 'VirtualNumber', intent: 'access',        recommendedCategory: 'Virtual Numbers' },
+        premium:       { interest: 'Premium',       intent: 'premium',       recommendedCategory: 'Premium Subscriptions' },
+        gaming:        { interest: 'Gaming',        intent: 'entertainment', recommendedCategory: 'Gift Cards' },
+        all:           { interest: 'All',           intent: 'everything',    recommendedCategory: 'Featured Bundles' },
+      },
 
       load() {
         try {
@@ -1708,26 +2466,78 @@
         return this;
       },
 
-      /** Animates HUD XP counter + bar from current to target */
+      /** Level = floor(xp / 100). 0 = LEVEL 0, 150 XP = LEVEL 1, 270 XP = LEVEL 2, ... */
+      level() { return Math.floor(this.data.xp / 100); },
+
+      /** Persian label for the currently selected path, or "—" if none picked yet */
+      pathLabel() {
+        return this.PATH_FA[this.data.selectedPath] || '—';
+      },
+
+      /** Update just the "PATH" text bindings (used after path selection outside animation). */
+      syncPath() {
+        const pathFa = this.pathLabel();
+        document.querySelectorAll('[data-bind="path-fa"]').forEach(el => { el.textContent = pathFa; });
+      },
+
+      /** Push current XP / level / path values into every element with a matching data-bind */
+      syncReadouts() {
+        const xp = this.data.xp;
+        const lvl = this.level();
+        const pathFa = this.pathLabel();
+        document.querySelectorAll('[data-bind="level"]').forEach(el => { el.textContent = lvl; });
+        document.querySelectorAll('[data-bind="xp-value"]').forEach(el => { el.textContent = xp; });
+        document.querySelectorAll('[data-bind="xp-full"]').forEach(el => { el.textContent = xp + ' / ' + this.MAX_XP; });
+        document.querySelectorAll('[data-bind="xp-fill"]').forEach(el => { el.style.width = (xp / this.MAX_XP * 100) + '%'; });
+        document.querySelectorAll('[data-bind="path-fa"]').forEach(el => { el.textContent = pathFa; });
+      },
+
+      /** Animates XP counter + bar; all bound readouts + level animate in lockstep. */
       animateXP(from, to, duration = 1200) {
-        const valEl = document.getElementById('hudXpValue');
-        const fillEl = document.getElementById('hudXpFill');
-        if (!valEl || !fillEl) return;
-        if (reducedMotion) {
-          valEl.textContent = to;
-          fillEl.style.width = (to / this.MAX_XP * 100) + '%';
-          return;
-        }
-        const start = performance.now();
         const self = this;
+        const apply = (v) => {
+          const lvl = Math.floor(v / 100);
+          document.querySelectorAll('[data-bind="level"]').forEach(el => { el.textContent = lvl; });
+          document.querySelectorAll('[data-bind="xp-value"]').forEach(el => { el.textContent = v; });
+          document.querySelectorAll('[data-bind="xp-full"]').forEach(el => { el.textContent = v + ' / ' + self.MAX_XP; });
+          document.querySelectorAll('[data-bind="xp-fill"]').forEach(el => { el.style.width = (v / self.MAX_XP * 100) + '%'; });
+        };
+        if (reducedMotion) { apply(to); return; }
+        const start = performance.now();
         (function step(now) {
           const t = Math.min(1, (now - start) / duration);
           const eased = 1 - Math.pow(1 - t, 3);
           const v = Math.round(from + (to - from) * eased);
-          valEl.textContent = v;
-          fillEl.style.width = (v / self.MAX_XP * 100) + '%';
+          apply(v);
           if (t < 1) requestAnimationFrame(step);
         })(performance.now());
+      },
+
+      /** Fly a "+N XP" badge from a source element to the HUD (or a specified target). */
+      xpFlyTo(fromEl, amount, targetEl) {
+        if (!fromEl || reducedMotion) return;
+        targetEl = targetEl || document.getElementById('hudPanel');
+        if (!targetEl) return;
+        const from = fromEl.getBoundingClientRect();
+        const to = targetEl.getBoundingClientRect();
+        const startX = from.left + from.width / 2;
+        const startY = from.top + from.height / 2;
+        const endX = to.left + to.width / 2;
+        const endY = to.top + to.height / 2;
+        const badge = document.createElement('div');
+        badge.className = 'xp-fly';
+        badge.textContent = '+' + amount + ' XP';
+        badge.style.left = startX + 'px';
+        badge.style.top = startY + 'px';
+        document.body.appendChild(badge);
+        void badge.offsetWidth;
+        requestAnimationFrame(() => {
+          const dx = endX - startX;
+          const dy = endY - startY;
+          badge.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.55)`;
+          badge.style.opacity = '0';
+        });
+        setTimeout(() => badge.remove(), 1300);
       },
 
       setStatusActive() {
@@ -1746,7 +2556,12 @@
 
       setMission(missionKey) {
         this.data.mission = missionKey;
-        const label = { NOT_STARTED: 'NOT STARTED', IN_PROGRESS: 'IN PROGRESS', PATH_SELECTED: 'PATH SELECTED' }[missionKey] || 'NOT STARTED';
+        const label = {
+          NOT_STARTED: 'NOT STARTED',
+          IN_PROGRESS: 'IN PROGRESS',
+          PATH_SELECTED: 'PATH SELECTED',
+          INTENT_SELECTED: 'INTENT LOCKED',
+        }[missionKey] || 'NOT STARTED';
         const el = document.getElementById('hudMissionStatus');
         if (!el) return;
         el.textContent = label;
@@ -1768,11 +2583,7 @@
 
       /** Called once on load — applies persisted state to UI without animation */
       hydrate() {
-        // XP + bar
-        const valEl = document.getElementById('hudXpValue');
-        const fillEl = document.getElementById('hudXpFill');
-        if (valEl) valEl.textContent = this.data.xp;
-        if (fillEl) fillEl.style.width = (this.data.xp / this.MAX_XP * 100) + '%';
+        this.syncReadouts();
 
         if (this.data.heroStarted || this.data.xp > 0) {
           this.setStatusActive();
@@ -1794,6 +2605,23 @@
             if (i < 1) d.classList.add('is-done');
           });
         }
+
+        // STEP 3: restore intent selection + mission-01 UI
+        if (this.data.userIntent) {
+          document.querySelectorAll('.mission-target').forEach(t => {
+            if (t.dataset.intent === this.data.userIntent) t.classList.add('is-selected');
+            else t.classList.add('is-dimmed');
+          });
+          document.querySelectorAll('.mi-progress-dot').forEach((d, i) => {
+            if (i < 2) d.classList.add('is-done');
+          });
+          const banner = document.getElementById('missionCompleteBanner');
+          if (banner) {
+            banner.classList.add('is-visible');
+            const rec = banner.querySelector('[data-bind="recommended"]');
+            if (rec && this.data.playerProfile) rec.textContent = this.data.playerProfile.recommendedCategory;
+          }
+        }
       },
 
       /** Public: start the hero mission (idempotent) */
@@ -1813,10 +2641,54 @@
         this.data.selectedPath = pathId;
         this.data.xp = prevXP + bonus;
         this.data.mission = 'PATH_SELECTED';
+        if (isFirstPick && !this.data.missionsCompleted.includes('path_selection')) {
+          this.data.missionsCompleted.push('path_selection');
+        }
         this.save();
+        this.syncPath();  // push new path label into all bound readouts
         return { isFirstPick, prevXP, newXP: this.data.xp, bonus };
       },
+
+      /** STEP 3 — pick an intent target. Awards +120 XP only on first-ever pick. */
+      setIntent(intentKey) {
+        const profile = this.INTENT_PROFILES[intentKey];
+        const isFirstPick = !this.data.userIntent;
+        const prevXP = this.data.xp;
+        const bonus = isFirstPick ? 120 : 0;
+        this.data.userIntent = intentKey;
+        this.data.playerProfile = profile || null;
+        this.data.xp = prevXP + bonus;
+        this.data.mission = 'INTENT_SELECTED';
+        if (isFirstPick && !this.data.missionsCompleted.includes('intent_discovery')) {
+          this.data.missionsCompleted.push('intent_discovery');
+        }
+        this.save();
+        return { isFirstPick, prevXP, newXP: this.data.xp, bonus, profile };
+      },
     };
+
+    /* ----------------- Lightweight analytics ----------------- */
+    const NumberlandAnalytics = {
+      track(event, payload) {
+        payload = payload || {};
+        if (!Array.isArray(window.dataLayer)) window.dataLayer = [];
+        const enriched = Object.assign({
+          event: event,
+          timestamp: new Date().toISOString(),
+          selectedPath: NumberlandState.data.selectedPath,
+          selectedIntent: NumberlandState.data.userIntent,
+          currentXP: NumberlandState.data.xp,
+          currentLevel: NumberlandState.level(),
+        }, payload);
+        window.dataLayer.push(enriched);
+        try {
+          document.dispatchEvent(new CustomEvent('numberland:analytics', { detail: enriched }));
+        } catch (e) { /* no CustomEvent support */ }
+        if (window.console && console.debug) console.debug('[numberland]', event, enriched);
+      }
+    };
+    window.NumberlandAnalytics = NumberlandAnalytics;
+    window.NumberlandState = NumberlandState;
 
     // Load persisted state early, hydrate after DOM ready
     NumberlandState.load();
@@ -1913,36 +2785,6 @@
         });
       }
 
-      /* XP fly-up animation from card to HUD */
-      function xpFlyUp(cardEl, amount) {
-        if (reducedMotion) return;
-        const hud = document.getElementById('hudPanel');
-        if (!hud) return;
-        const cardRect = cardEl.getBoundingClientRect();
-        const hudRect = hud.getBoundingClientRect();
-        const startX = cardRect.left + cardRect.width / 2;
-        const startY = cardRect.top + cardRect.height / 2;
-        const endX = hudRect.left + hudRect.width / 2;
-        const endY = hudRect.top + hudRect.height / 2;
-
-        const badge = document.createElement('div');
-        badge.className = 'xp-fly';
-        badge.textContent = '+' + amount + ' XP';
-        badge.style.left = startX + 'px';
-        badge.style.top = startY + 'px';
-        document.body.appendChild(badge);
-
-        // Force reflow, then animate
-        void badge.offsetWidth;
-        requestAnimationFrame(() => {
-          const dx = endX - startX;
-          const dy = endY - startY;
-          badge.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.55)`;
-          badge.style.opacity = '0';
-        });
-        setTimeout(() => badge.remove(), 1300);
-      }
-
       /* Handle click on a path card */
       function selectCard(card) {
         if (transitionLock) return;
@@ -1966,7 +2808,7 @@
 
         // XP fly-up first (during the pick animation)
         if (result.bonus > 0) {
-          xpFlyUp(card, result.bonus);
+          NumberlandState.xpFlyTo(card, result.bonus);
         }
 
         // After the pick animation completes, commit the persistent selected state
@@ -2005,6 +2847,160 @@
           }
         });
       });
+    })();
+
+    /* ----------------- Mission 01 · Intent Discovery (STEP 3) ----------------- */
+    (function () {
+      const section = document.getElementById('missionIntent');
+      if (!section) return;
+      const targets = Array.from(section.querySelectorAll('.mission-target'));
+      if (!targets.length) return;
+      const banner = document.getElementById('missionCompleteBanner');
+      const sr = document.getElementById('srStatus');
+
+      const INTENT_FA = {
+        payment: 'پرداخت بین‌المللی',
+        ai: 'اکانت هوش مصنوعی',
+        virtualnumber: 'شماره خارجی',
+        premium: 'اشتراک پریمیوم',
+        gaming: 'گیم و سرگرمی',
+        all: 'دسترسی همه‌جانبه',
+      };
+
+      let transitionLock = false;
+      const seenTargets = new WeakSet();
+
+      /* Hover 3D tilt + mouse-tracked glow (skipped on reduced motion) */
+      if (!reducedMotion) {
+        targets.forEach((target) => {
+          let raf = 0;
+          let mx = 50, my = 50, tiltX = 0, tiltY = 0;
+          target.addEventListener('mousemove', (e) => {
+            const rect = target.getBoundingClientRect();
+            const px = (e.clientX - rect.left) / rect.width;
+            const py = (e.clientY - rect.top) / rect.height;
+            mx = px * 100;
+            my = py * 100;
+            tiltX = (py - 0.5) * -4;
+            tiltY = (px - 0.5) * 5;
+            if (!raf) {
+              raf = requestAnimationFrame(() => {
+                target.style.setProperty('--mx', mx + '%');
+                target.style.setProperty('--my', my + '%');
+                if (!target.classList.contains('is-selecting')) {
+                  target.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) translateY(-3px)`;
+                }
+                raf = 0;
+              });
+            }
+          });
+          target.addEventListener('mouseleave', () => {
+            target.style.removeProperty('--mx');
+            target.style.removeProperty('--my');
+            if (!target.classList.contains('is-selecting')) {
+              target.style.transform = '';
+            }
+          });
+        });
+      }
+
+      /* Reveal the mission-complete banner + wire the recommended-category label */
+      function revealBanner(profile) {
+        if (!banner) return;
+        const rec = banner.querySelector('[data-bind="recommended"]');
+        if (rec) rec.textContent = profile?.recommendedCategory || '—';
+        banner.classList.add('is-visible');
+      }
+
+      /* Handle selecting a mission target */
+      function selectTarget(target) {
+        if (transitionLock) return;
+        const intent = target.dataset.intent;
+        if (!intent) return;
+        if (NumberlandState.data.userIntent === intent) return;
+
+        NumberlandAnalytics.track('mission_01_selected', { intent });
+
+        const prevXP = NumberlandState.data.xp;
+        const result = NumberlandState.setIntent(intent);
+        transitionLock = true;
+
+        targets.forEach(t => t.classList.remove('is-selected'));
+        targets.forEach(t => {
+          if (t === target) t.classList.add('is-selecting');
+          else t.classList.add('is-dimmed');
+        });
+
+        if (result.bonus > 0) {
+          NumberlandState.xpFlyTo(target, result.bonus);
+        }
+
+        const delay = result.isFirstPick ? 700 : 500;
+        setTimeout(() => {
+          target.classList.remove('is-selecting');
+          target.classList.add('is-selected');
+
+          if (result.bonus > 0) {
+            NumberlandState.animateXP(prevXP, result.newXP, 1200);
+            NumberlandAnalytics.track('xp_earned', { amount: result.bonus, reason: 'mission_01_completed' });
+          }
+          NumberlandState.setMission('INTENT_SELECTED');
+          NumberlandState.pulseHUD();
+          NumberlandState.setStatusActive();
+
+          // Mark mission 2 dot as done
+          document.querySelectorAll('.mi-progress-dot').forEach((d, i) => {
+            if (i < 2) d.classList.add('is-done');
+          });
+
+          // Reveal completion banner
+          revealBanner(result.profile);
+
+          // Analytics — order matters for downstream funnels
+          NumberlandAnalytics.track('intent_detected', { intent, profile: result.profile });
+          NumberlandAnalytics.track('player_profile_updated', { profile: result.profile });
+          NumberlandAnalytics.track('mission_01_completed', { intent });
+
+          if (sr) {
+            sr.textContent = 'هدف «' + (INTENT_FA[intent] || intent) + '» انتخاب شد. ماموریت کامل شد و ۱۲۰ امتیاز تجربه اضافه شد.';
+          }
+          transitionLock = false;
+        }, delay);
+      }
+
+      targets.forEach(t => {
+        t.addEventListener('click', () => selectTarget(t));
+        t.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectTarget(t); }
+        });
+      });
+
+      /* Analytics: fire mission_01_view once when the section enters view.
+         Fire mission_01_option_view once per target when it first enters view. */
+      if ('IntersectionObserver' in window) {
+        let sectionSeen = false;
+        const sectionObs = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting && !sectionSeen) {
+              sectionSeen = true;
+              NumberlandAnalytics.track('mission_01_view');
+              sectionObs.unobserve(section);
+            }
+          });
+        }, { threshold: 0.25 });
+        sectionObs.observe(section);
+
+        const targetObs = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting && !seenTargets.has(entry.target)) {
+              seenTargets.add(entry.target);
+              NumberlandAnalytics.track('mission_01_option_view', { intent: entry.target.dataset.intent });
+              targetObs.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.5 });
+        targets.forEach(t => targetObs.observe(t));
+      }
     })();
   </script>
 
