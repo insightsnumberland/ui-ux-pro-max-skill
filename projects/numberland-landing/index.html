@@ -454,6 +454,484 @@
     @media (max-width: 767px) {
       .grid-lines { background-size: 44px 44px; }
     }
+
+    /* ===================================================================
+       STEP 2 · Choose Your Path
+       =================================================================== */
+
+    /* Section backdrop */
+    .choose-path {
+      background:
+        radial-gradient(1000px 500px at 50% 0%, rgba(75, 158, 255, 0.10), transparent 65%),
+        radial-gradient(700px 500px at 15% 60%, rgba(139, 92, 246, 0.08), transparent 60%),
+        radial-gradient(700px 500px at 85% 40%, rgba(34, 211, 238, 0.06), transparent 60%),
+        linear-gradient(180deg, #04060F 0%, #060A18 100%);
+    }
+
+    /* Mission label pill */
+    .mission-pill {
+      background: linear-gradient(180deg, rgba(15, 21, 38, 0.7), rgba(10, 14, 26, 0.85));
+    }
+    .mission-pill-dot { box-shadow: 0 0 10px rgba(75, 158, 255, 0.75); }
+
+    /* Progress dots */
+    .path-progress-dot { transition: background 0.4s ease, box-shadow 0.4s ease; }
+    .path-progress-dot.is-done {
+      background: #22D3EE !important;
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.7);
+    }
+
+    /* Path grid layout */
+    .path-grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: 1fr;
+      grid-template-areas: "hub" "ai" "money" "game" "access" "premium" "gift";
+    }
+    @media (min-width: 640px) {
+      .path-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+          "hub hub"
+          "ai money"
+          "premium access"
+          "game gift";
+        gap: 22px;
+      }
+    }
+    @media (min-width: 1024px) {
+      .path-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 1fr);
+        grid-template-rows: auto auto auto auto;
+        grid-template-areas:
+          ".        ai       .       "
+          "premium  hub      money   "
+          "access   hub      game    "
+          ".        gift     .       ";
+        gap: 24px 26px;
+        align-items: stretch;
+      }
+    }
+    @media (min-width: 1280px) {
+      .path-grid { gap: 28px 40px; }
+    }
+
+    /* Radiating background lines behind the hub (desktop only) */
+    .path-rays {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: none;
+    }
+    @media (min-width: 1024px) {
+      .path-rays { display: block; }
+    }
+    .path-rays svg { width: 100%; height: 100%; }
+    .ray {
+      stroke: rgba(75, 158, 255, 0.22);
+      stroke-width: 1;
+      stroke-dasharray: 4 8;
+      fill: none;
+    }
+    @keyframes ray-flow {
+      to { stroke-dashoffset: -240; }
+    }
+    .ray-anim { animation: ray-flow 24s linear infinite; }
+
+    /* Path card */
+    .path-card {
+      position: relative;
+      display: block;
+      width: 100%;
+      text-align: right;
+      background: linear-gradient(180deg, rgba(15, 21, 38, 0.78), rgba(10, 14, 26, 0.9));
+      border: 1px solid rgba(75, 158, 255, 0.15);
+      border-radius: 20px;
+      padding: 22px 22px 20px;
+      color: inherit;
+      cursor: pointer;
+      transition:
+        transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+        border-color 0.35s ease,
+        box-shadow 0.4s ease,
+        opacity 0.4s ease,
+        background 0.4s ease;
+      overflow: hidden;
+      isolation: isolate;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      will-change: transform;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .path-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%),
+        rgba(75, 158, 255, 0.14), transparent 55%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      z-index: 0;
+    }
+    .path-card::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 20px;
+      pointer-events: none;
+      background: linear-gradient(135deg,
+        rgba(var(--accent-rgb, 75, 158, 255), 0) 0%,
+        rgba(var(--accent-rgb, 75, 158, 255), 0.55) 50%,
+        rgba(var(--accent-rgb, 75, 158, 255), 0) 100%);
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .path-card > * { position: relative; z-index: 1; }
+    .path-card:hover,
+    .path-card:focus-visible {
+      border-color: rgba(var(--accent-rgb, 75, 158, 255), 0.55);
+      box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.35),
+        0 0 60px rgba(var(--accent-rgb, 75, 158, 255), 0.2);
+      background: linear-gradient(180deg, rgba(20, 27, 46, 0.82), rgba(12, 17, 32, 0.9));
+    }
+    .path-card:hover::before,
+    .path-card:focus-visible::before { opacity: 1; }
+    .path-card:hover::after { opacity: 1; }
+    .path-card:hover .path-icon-halo { transform: scale(1.06); }
+    .path-card:hover .path-icon-halo::before { opacity: 1; }
+    .path-card:hover .path-icon { transform: rotate(-2deg) scale(1.08); }
+
+    @media (max-width: 767px) {
+      /* No hover-dependent transforms on touch */
+      .path-card { transition: transform 0.25s ease, border-color 0.35s ease, box-shadow 0.4s ease; }
+      .path-card:hover { transform: none; }
+    }
+
+    /* Accent color per path */
+    .path-card[data-accent="blue"]   { --accent-rgb: 75, 158, 255; }
+    .path-card[data-accent="violet"] { --accent-rgb: 139, 92, 246; }
+    .path-card[data-accent="cyan"]   { --accent-rgb: 34, 211, 238; }
+    .path-card[data-accent="gold"]   { --accent-rgb: 245, 184, 64; }
+    .path-card[data-accent="magenta"]{ --accent-rgb: 217, 112, 240; }
+
+    /* Card icon */
+    .path-icon-halo {
+      position: relative;
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 30% 30%,
+        rgba(var(--accent-rgb), 0.28),
+        rgba(10, 14, 26, 0.88) 70%);
+      border: 1px solid rgba(var(--accent-rgb), 0.4);
+      box-shadow: inset 0 0 18px rgba(var(--accent-rgb), 0.12);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .path-icon-halo::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 20px;
+      border: 1px solid rgba(var(--accent-rgb), 0.22);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .path-icon {
+      width: 26px;
+      height: 26px;
+      color: rgb(var(--accent-rgb));
+      filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), 0.45));
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* XP badge */
+    .xp-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(var(--accent-rgb), 0.12);
+      border: 1px solid rgba(var(--accent-rgb), 0.35);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: rgb(var(--accent-rgb));
+    }
+    .xp-badge svg { width: 10px; height: 10px; }
+
+    /* Card typography */
+    .path-en {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.24em;
+      color: rgba(199, 214, 245, 0.55);
+      text-transform: uppercase;
+    }
+    .path-title {
+      font-family: 'Vazirmatn', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      color: #E7ECF7;
+      line-height: 1.35;
+    }
+    .path-desc {
+      font-family: 'Vazirmatn', sans-serif;
+      font-size: 13px;
+      color: #8B99B8;
+      line-height: 1.7;
+    }
+
+    /* Examples chips */
+    .path-examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .path-example {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.02em;
+      color: #C8D6F5;
+      padding: 3px 7px;
+      border-radius: 4px;
+      background: rgba(75, 158, 255, 0.06);
+      border: 1px solid rgba(75, 158, 255, 0.14);
+    }
+
+    /* Selected banner (revealed on selection) */
+    .selected-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: linear-gradient(90deg, rgba(34, 211, 238, 0.12), rgba(34, 211, 238, 0.03));
+      border: 1px solid rgba(34, 211, 238, 0.4);
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      margin-top: 0;
+      transition: opacity 0.4s ease, max-height 0.5s ease, margin-top 0.4s ease;
+    }
+    .selected-banner .banner-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Vazirmatn', sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      color: #22D3EE;
+    }
+    .selected-banner .banner-right {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #22D3EE;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(34, 211, 238, 0.14);
+      border: 1px solid rgba(34, 211, 238, 0.4);
+    }
+    .selected-banner .banner-check {
+      width: 14px; height: 14px;
+      color: #22D3EE;
+      filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.7));
+    }
+
+    /* Selecting (transition) */
+    .path-card.is-selecting {
+      animation: card-pick 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      border-color: rgba(var(--accent-rgb), 0.9);
+    }
+    @keyframes card-pick {
+      0% { transform: scale(1); box-shadow: 0 12px 40px rgba(0,0,0,0.35); }
+      35% { transform: scale(0.985); box-shadow: 0 0 90px rgba(var(--accent-rgb), 0.5), inset 0 0 40px rgba(var(--accent-rgb), 0.15); }
+      100% { transform: scale(1); box-shadow: 0 12px 40px rgba(0,0,0,0.35); }
+    }
+
+    /* Selected (persistent) */
+    .path-card.is-selected {
+      border-color: rgba(34, 211, 238, 0.55) !important;
+      background: linear-gradient(180deg, rgba(18, 32, 46, 0.9), rgba(11, 20, 30, 0.95));
+      box-shadow:
+        0 14px 44px rgba(0,0,0,0.35),
+        0 0 60px rgba(34, 211, 238, 0.18),
+        inset 0 0 30px rgba(34, 211, 238, 0.06);
+    }
+    .path-card.is-selected .selected-banner {
+      opacity: 1;
+      max-height: 60px;
+      margin-top: 12px;
+    }
+    .path-card.is-selected .xp-badge {
+      background: rgba(34, 211, 238, 0.14);
+      border-color: rgba(34, 211, 238, 0.5);
+      color: #22D3EE;
+    }
+    .path-card.is-selected .path-icon-halo {
+      border-color: rgba(34, 211, 238, 0.55);
+      box-shadow: inset 0 0 18px rgba(34, 211, 238, 0.15);
+      background: radial-gradient(circle at 30% 30%,
+        rgba(34, 211, 238, 0.3),
+        rgba(10, 14, 26, 0.9) 70%);
+    }
+    .path-card.is-selected .path-icon {
+      color: #22D3EE;
+      filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.6));
+    }
+
+    /* Dimmed */
+    .path-card.is-dimmed {
+      opacity: 0.42;
+      filter: saturate(0.6);
+    }
+    .path-card.is-dimmed:hover {
+      opacity: 0.75;
+      filter: saturate(0.9);
+    }
+
+    /* ================= Player Core (center hub) ================= */
+    .player-core {
+      grid-area: hub;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 220px;
+      padding: 20px;
+    }
+    @media (min-width: 1024px) {
+      .player-core { min-height: 260px; }
+    }
+    .core-halo {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .core-halo::before,
+    .core-halo::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(75, 158, 255, 0.18);
+    }
+    .core-halo::before { inset: 0; }
+    .core-halo::after { inset: -22px; border-style: dashed; border-color: rgba(75, 158, 255, 0.12); }
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+    .core-orbit {
+      position: absolute;
+      inset: -44px;
+      border-radius: 50%;
+      border: 1px dashed rgba(139, 92, 246, 0.14);
+      animation: spin-slow 40s linear infinite;
+    }
+    .core-orbit::before {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: 50%;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #22D3EE;
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.85);
+      transform: translateX(-50%);
+    }
+    .core-body {
+      position: relative;
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(75, 158, 255, 0.45), rgba(10, 14, 26, 0.95) 65%);
+      border: 1px solid rgba(75, 158, 255, 0.55);
+      box-shadow:
+        0 0 60px rgba(75, 158, 255, 0.28),
+        inset 0 0 30px rgba(75, 158, 255, 0.15);
+    }
+    .core-body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg,
+        rgba(75, 158, 255, 0) 0deg,
+        rgba(75, 158, 255, 0.35) 60deg,
+        rgba(75, 158, 255, 0) 120deg,
+        rgba(139, 92, 246, 0.35) 240deg,
+        rgba(75, 158, 255, 0) 300deg);
+      -webkit-mask: radial-gradient(circle, transparent 62%, black 63%);
+              mask: radial-gradient(circle, transparent 62%, black 63%);
+      animation: spin-slow 12s linear infinite;
+    }
+    .core-logo {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 42px;
+      background: linear-gradient(135deg, #E7ECF7 0%, #60A5FA 60%, #22D3EE 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      line-height: 1;
+      text-shadow: 0 0 30px rgba(75, 158, 255, 0.35);
+    }
+    .core-label {
+      font-family: 'Vazirmatn', sans-serif;
+      font-size: 11px;
+      color: #C8D6F5;
+      margin-top: 4px;
+    }
+    .core-hint {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.24em;
+      color: #7B8BA8;
+      margin-top: 2px;
+      text-transform: uppercase;
+    }
+
+    /* ================= XP fly-up animation ================= */
+    .xp-fly {
+      position: fixed;
+      z-index: 60;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(34, 211, 238, 0.28), rgba(34, 211, 238, 0.1));
+      border: 1px solid rgba(34, 211, 238, 0.65);
+      color: #E7ECF7;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      transform: translate(-50%, -50%) scale(1);
+      box-shadow: 0 0 24px rgba(34, 211, 238, 0.5);
+      pointer-events: none;
+      transition:
+        transform 1.15s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 1.15s ease-out;
+      opacity: 1;
+    }
+
+    /* Focus outlines on the button itself */
+    .path-card:focus-visible {
+      outline: 2px solid #60A5FA;
+      outline-offset: 3px;
+    }
   </style>
 </head>
 <body class="no-tap-highlight">
@@ -776,6 +1254,283 @@
 
   </section>
 
+  <!-- ==================================================================
+       STEP 2 · Choose Your Path
+       ================================================================== -->
+  <section id="choosePath" class="choose-path relative py-20 sm:py-24 lg:py-28 overflow-hidden" aria-labelledby="choosePathTitle">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 stars opacity-50 pointer-events-none" aria-hidden="true"></div>
+    <div class="absolute inset-0 grid-lines opacity-40 pointer-events-none" aria-hidden="true"></div>
+
+    <div class="relative z-10 max-w-6xl mx-auto px-5 sm:px-8 lg:px-10">
+
+      <!-- Section header -->
+      <div class="text-center mb-12 sm:mb-16 lg:mb-20">
+        <!-- Mission label pill -->
+        <div class="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full mission-pill border border-primary/25 backdrop-blur-md">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary mission-pill-dot"></span>
+          <span class="font-mono text-[10px] tracking-[0.28em] text-primary-glow">MISSION_01</span>
+          <span class="w-px h-3 bg-primary/25"></span>
+          <span class="font-fa text-[11px] text-text/85">ماموریت ۰۱</span>
+        </div>
+
+        <h2 id="choosePathTitle" class="font-fa font-bold text-[36px] leading-[1.2] xs:text-[42px] sm:text-[52px] md:text-[60px] lg:text-[64px] tracking-tight mb-5 max-w-2xl mx-auto">
+          <span class="title-line">مسیرتو</span>
+          <span class="title-accent">انتخاب کن</span>
+        </h2>
+
+        <p class="font-fa text-base sm:text-lg text-muted max-w-xl mx-auto leading-relaxed">
+          بیشتر دنبال کدوم بخش از دنیای دیجیتال هستی؟
+        </p>
+
+        <!-- Progress indicator -->
+        <div class="mt-7 inline-flex items-center gap-3">
+          <div class="flex items-center gap-1.5">
+            <span class="path-progress-dot w-1.5 h-1.5 rounded-full bg-primary" style="box-shadow: 0 0 10px rgba(75,158,255,0.75);"></span>
+            <span class="path-progress-dot w-1.5 h-1.5 rounded-full bg-primary/25"></span>
+            <span class="path-progress-dot w-1.5 h-1.5 rounded-full bg-primary/25"></span>
+          </div>
+          <span class="font-fa text-xs sm:text-sm text-muted">۱ از ۳ ماموریت</span>
+        </div>
+      </div>
+
+      <!-- Path map -->
+      <div class="path-map relative">
+        <!-- Background rays behind the hub (desktop) -->
+        <div class="path-rays" aria-hidden="true">
+          <svg viewBox="0 0 1000 800" preserveAspectRatio="none">
+            <g class="ray ray-anim">
+              <line x1="500" y1="400" x2="500" y2="80"/>
+              <line x1="500" y1="400" x2="140" y2="270"/>
+              <line x1="500" y1="400" x2="860" y2="270"/>
+              <line x1="500" y1="400" x2="140" y2="530"/>
+              <line x1="500" y1="400" x2="860" y2="530"/>
+              <line x1="500" y1="400" x2="500" y2="720"/>
+            </g>
+            <g class="ray" style="stroke:rgba(139,92,246,0.15); stroke-dasharray:none;">
+              <circle cx="500" cy="400" r="140"/>
+              <circle cx="500" cy="400" r="260"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="path-grid">
+
+          <!-- AI CITY -->
+          <button type="button" class="path-card" data-path="ai" data-accent="violet" style="grid-area: ai">
+            <div class="flex items-start justify-between mb-5">
+              <div class="path-icon-halo">
+                <svg class="path-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4"/>
+                  <path d="M10 11h4M10 13h4"/>
+                  <path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>
+                </svg>
+              </div>
+              <span class="xp-badge" dir="ltr">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 3L4 14h6l-1 7 9-11h-6z"/></svg>
+                +100 XP
+              </span>
+            </div>
+            <div class="path-en mb-1">AI CITY</div>
+            <h3 class="path-title mb-2">شهر هوش مصنوعی</h3>
+            <p class="path-desc mb-4">دسترسی به ابزارهای هوش مصنوعی و اکانت‌های حرفه‌ای</p>
+            <div class="path-examples">
+              <span class="path-example">ChatGPT</span>
+              <span class="path-example">Claude</span>
+              <span class="path-example">Gemini</span>
+            </div>
+            <div class="selected-banner" aria-hidden="true">
+              <span class="banner-left">
+                <svg class="banner-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                مسیر انتخاب شد
+              </span>
+              <span class="banner-right" dir="ltr">+100 XP</span>
+            </div>
+          </button>
+
+          <!-- MONEY DISTRICT -->
+          <button type="button" class="path-card" data-path="money" data-accent="blue" style="grid-area: money">
+            <div class="flex items-start justify-between mb-5">
+              <div class="path-icon-halo">
+                <svg class="path-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="6" width="18" height="13" rx="2"/>
+                  <path d="M3 10h18"/>
+                  <path d="M7 15h3"/>
+                  <circle cx="17" cy="15" r="1.4"/>
+                </svg>
+              </div>
+              <span class="xp-badge" dir="ltr">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 3L4 14h6l-1 7 9-11h-6z"/></svg>
+                +100 XP
+              </span>
+            </div>
+            <div class="path-en mb-1">MONEY DISTRICT</div>
+            <h3 class="path-title mb-2">منطقه پرداخت جهانی</h3>
+            <p class="path-desc mb-4">پرداخت ارزی و دسترسی به کارت‌های بین‌المللی</p>
+            <div class="path-examples">
+              <span class="path-example">Visa</span>
+              <span class="path-example">Mastercard</span>
+              <span class="path-example">PayPal</span>
+            </div>
+            <div class="selected-banner" aria-hidden="true">
+              <span class="banner-left">
+                <svg class="banner-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                مسیر انتخاب شد
+              </span>
+              <span class="banner-right" dir="ltr">+100 XP</span>
+            </div>
+          </button>
+
+          <!-- PLAYER CORE (center hub) -->
+          <div class="player-core" aria-hidden="true">
+            <div class="core-halo">
+              <div class="core-orbit"></div>
+              <div class="core-body">
+                <div class="core-logo">N</div>
+                <div class="core-label">تو اینجایی</div>
+                <div class="core-hint">PLAYER · CORE</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PREMIUM CLUB -->
+          <button type="button" class="path-card" data-path="premium" data-accent="gold" style="grid-area: premium">
+            <div class="flex items-start justify-between mb-5">
+              <div class="path-icon-halo">
+                <svg class="path-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 8l3 6 5-8 5 8 3-6-2 12H6z"/>
+                  <path d="M6 20h12"/>
+                </svg>
+              </div>
+              <span class="xp-badge" dir="ltr">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 3L4 14h6l-1 7 9-11h-6z"/></svg>
+                +100 XP
+              </span>
+            </div>
+            <div class="path-en mb-1">PREMIUM CLUB</div>
+            <h3 class="path-title mb-2">باشگاه پریمیوم</h3>
+            <p class="path-desc mb-4">اشتراک سرویس‌های محبوب جهانی</p>
+            <div class="path-examples">
+              <span class="path-example">Telegram Premium</span>
+              <span class="path-example">Spotify</span>
+              <span class="path-example">YouTube Premium</span>
+            </div>
+            <div class="selected-banner" aria-hidden="true">
+              <span class="banner-left">
+                <svg class="banner-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                مسیر انتخاب شد
+              </span>
+              <span class="banner-right" dir="ltr">+100 XP</span>
+            </div>
+          </button>
+
+          <!-- ACCESS ZONE -->
+          <button type="button" class="path-card" data-path="access" data-accent="cyan" style="grid-area: access">
+            <div class="flex items-start justify-between mb-5">
+              <div class="path-icon-halo">
+                <svg class="path-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/>
+                  <path d="M3 12h18"/>
+                  <path d="M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>
+                </svg>
+              </div>
+              <span class="xp-badge" dir="ltr">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 3L4 14h6l-1 7 9-11h-6z"/></svg>
+                +100 XP
+              </span>
+            </div>
+            <div class="path-en mb-1">ACCESS ZONE</div>
+            <h3 class="path-title mb-2">منطقه دسترسی</h3>
+            <p class="path-desc mb-4">شماره مجازی و راهکارهای اتصال جهانی</p>
+            <div class="path-examples">
+              <span class="path-example">Virtual Number</span>
+              <span class="path-example">Google Voice</span>
+              <span class="path-example">eSIM</span>
+            </div>
+            <div class="selected-banner" aria-hidden="true">
+              <span class="banner-left">
+                <svg class="banner-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                مسیر انتخاب شد
+              </span>
+              <span class="banner-right" dir="ltr">+100 XP</span>
+            </div>
+          </button>
+
+          <!-- GAME ISLAND -->
+          <button type="button" class="path-card" data-path="game" data-accent="cyan" style="grid-area: game">
+            <div class="flex items-start justify-between mb-5">
+              <div class="path-icon-halo">
+                <svg class="path-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M6 8h12a3 3 0 013 3v3a3 3 0 01-3 3h-2l-2-2H10l-2 2H6a3 3 0 01-3-3v-3a3 3 0 013-3z"/>
+                  <path d="M8.5 12h2"/>
+                  <path d="M9.5 11v2"/>
+                  <circle cx="15" cy="11.5" r="0.9"/>
+                  <circle cx="17" cy="13.5" r="0.9"/>
+                </svg>
+              </div>
+              <span class="xp-badge" dir="ltr">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 3L4 14h6l-1 7 9-11h-6z"/></svg>
+                +100 XP
+              </span>
+            </div>
+            <div class="path-en mb-1">GAME ISLAND</div>
+            <h3 class="path-title mb-2">جزیره گیمرها</h3>
+            <p class="path-desc mb-4">ورود به دنیای بازی‌ها و سرویس‌های گیمینگ</p>
+            <div class="path-examples">
+              <span class="path-example">PlayStation</span>
+              <span class="path-example">Steam</span>
+              <span class="path-example">Xbox</span>
+            </div>
+            <div class="selected-banner" aria-hidden="true">
+              <span class="banner-left">
+                <svg class="banner-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                مسیر انتخاب شد
+              </span>
+              <span class="banner-right" dir="ltr">+100 XP</span>
+            </div>
+          </button>
+
+          <!-- GIFT VAULT -->
+          <button type="button" class="path-card" data-path="gift" data-accent="magenta" style="grid-area: gift">
+            <div class="flex items-start justify-between mb-5">
+              <div class="path-icon-halo">
+                <svg class="path-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="9" width="18" height="12" rx="2"/>
+                  <path d="M3 13h18"/>
+                  <path d="M12 9v12"/>
+                  <path d="M9 9c0-2 1.3-3 3-3s3 1 3 3"/>
+                  <path d="M6 9v-1a3 3 0 013-3"/>
+                  <path d="M18 9v-1a3 3 0 00-3-3"/>
+                </svg>
+              </div>
+              <span class="xp-badge" dir="ltr">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 3L4 14h6l-1 7 9-11h-6z"/></svg>
+                +100 XP
+              </span>
+            </div>
+            <div class="path-en mb-1">GIFT VAULT</div>
+            <h3 class="path-title mb-2">خزانه گیفت‌کارت</h3>
+            <p class="path-desc mb-4">دسترسی به گیفت‌کارت‌های بین‌المللی</p>
+            <div class="path-examples">
+              <span class="path-example">Apple</span>
+              <span class="path-example">Steam</span>
+              <span class="path-example">PlayStation</span>
+              <span class="path-example">Google Play</span>
+            </div>
+            <div class="selected-banner" aria-hidden="true">
+              <span class="banner-left">
+                <svg class="banner-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                مسیر انتخاب شد
+              </span>
+              <span class="banner-right" dir="ltr">+100 XP</span>
+            </div>
+          </button>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Screen reader status announcer -->
   <div id="srStatus" class="sr-only" aria-live="polite"></div>
 
@@ -930,78 +1685,325 @@
       });
     })();
 
-    /* ----------------- Mission start interaction ----------------- */
-    (function () {
-      const btn = document.getElementById('startMissionBtn');
-      const hud = document.getElementById('hudPanel');
-      const xpValue = document.getElementById('hudXpValue');
-      const xpFill = document.getElementById('hudXpFill');
-      const statusText = document.getElementById('hudStatusText');
-      const statusIcon = document.getElementById('hudStatusIcon');
-      const missionStatus = document.getElementById('hudMissionStatus');
-      const level = document.getElementById('hudLevel');
-      const flash = document.getElementById('missionFlash');
-      const sr = document.getElementById('srStatus');
+    /* ----------------- Shared game state (persisted) ----------------- */
+    const NumberlandState = {
+      storageKey: 'numberland:state:v1',
+      data: {
+        heroStarted: false,
+        selectedPath: null,
+        xp: 0,
+        mission: 'NOT_STARTED', // NOT_STARTED | IN_PROGRESS | PATH_SELECTED
+      },
+      MAX_XP: 1000,
 
-      let started = false;
+      load() {
+        try {
+          const raw = localStorage.getItem(this.storageKey);
+          if (raw) Object.assign(this.data, JSON.parse(raw));
+        } catch (e) { /* localStorage unavailable */ }
+        return this;
+      },
+      save() {
+        try { localStorage.setItem(this.storageKey, JSON.stringify(this.data)); } catch (e) {}
+        return this;
+      },
 
-      function animateNumber(el, from, to, duration) {
-        if (reducedMotion) { el.textContent = to; return; }
+      /** Animates HUD XP counter + bar from current to target */
+      animateXP(from, to, duration = 1200) {
+        const valEl = document.getElementById('hudXpValue');
+        const fillEl = document.getElementById('hudXpFill');
+        if (!valEl || !fillEl) return;
+        if (reducedMotion) {
+          valEl.textContent = to;
+          fillEl.style.width = (to / this.MAX_XP * 100) + '%';
+          return;
+        }
         const start = performance.now();
-        function step(now) {
+        const self = this;
+        (function step(now) {
           const t = Math.min(1, (now - start) / duration);
           const eased = 1 - Math.pow(1 - t, 3);
-          el.textContent = Math.round(from + (to - from) * eased);
+          const v = Math.round(from + (to - from) * eased);
+          valEl.textContent = v;
+          fillEl.style.width = (v / self.MAX_XP * 100) + '%';
           if (t < 1) requestAnimationFrame(step);
+        })(performance.now());
+      },
+
+      setStatusActive() {
+        const statusText = document.getElementById('hudStatusText');
+        const statusIcon = document.getElementById('hudStatusIcon');
+        const hud = document.getElementById('hudPanel');
+        if (!statusText) return;
+        statusText.textContent = 'ACTIVE';
+        statusText.classList.remove('status-locked');
+        statusText.classList.add('status-active');
+        statusIcon.classList.remove('status-locked');
+        statusIcon.classList.add('status-active');
+        statusIcon.innerHTML = '<path d="M12 2l7 4v6c0 5-3.5 9-7 10-3.5-1-7-5-7-10V6l7-4z"/><path fill="#0A0E1A" d="M9 12l2 2 4-4"/>';
+        hud.classList.add('hud-active');
+      },
+
+      setMission(missionKey) {
+        this.data.mission = missionKey;
+        const label = { NOT_STARTED: 'NOT STARTED', IN_PROGRESS: 'IN PROGRESS', PATH_SELECTED: 'PATH SELECTED' }[missionKey] || 'NOT STARTED';
+        const el = document.getElementById('hudMissionStatus');
+        if (!el) return;
+        el.textContent = label;
+        if (missionKey === 'NOT_STARTED') {
+          el.classList.add('text-muted');
+          el.classList.remove('status-active');
+        } else {
+          el.classList.remove('text-muted');
+          el.classList.add('status-active');
         }
-        requestAnimationFrame(step);
-      }
+      },
 
-      btn.addEventListener('click', () => {
-        if (started) return;
-        started = true;
-
-        // CTA visual
-        btn.classList.add('is-charging');
-        setTimeout(() => btn.classList.remove('is-charging'), 900);
-
-        // HUD flash + active
+      pulseHUD() {
+        const hud = document.getElementById('hudPanel');
+        if (!hud) return;
         hud.classList.add('hud-flash');
         setTimeout(() => hud.classList.remove('hud-flash'), 1200);
+      },
 
-        // Screen flash
+      /** Called once on load — applies persisted state to UI without animation */
+      hydrate() {
+        // XP + bar
+        const valEl = document.getElementById('hudXpValue');
+        const fillEl = document.getElementById('hudXpFill');
+        if (valEl) valEl.textContent = this.data.xp;
+        if (fillEl) fillEl.style.width = (this.data.xp / this.MAX_XP * 100) + '%';
+
+        if (this.data.heroStarted || this.data.xp > 0) {
+          this.setStatusActive();
+          const btn = document.getElementById('startMissionBtn');
+          if (btn) {
+            btn.classList.add('is-active');
+            const label = btn.querySelector('span');
+            if (label) label.textContent = 'مأموریت فعال شد';
+          }
+        }
+        this.setMission(this.data.mission);
+
+        if (this.data.selectedPath) {
+          document.querySelectorAll('.path-card').forEach(c => {
+            if (c.dataset.path === this.data.selectedPath) c.classList.add('is-selected');
+            else c.classList.add('is-dimmed');
+          });
+          document.querySelectorAll('.path-progress-dot').forEach((d, i) => {
+            if (i < 1) d.classList.add('is-done');
+          });
+        }
+      },
+
+      /** Public: start the hero mission (idempotent) */
+      startHero() {
+        if (this.data.heroStarted) return;
+        this.data.heroStarted = true;
+        this.data.xp = 50;
+        this.data.mission = 'IN_PROGRESS';
+        this.save();
+      },
+
+      /** Public: pick a path. Awards +100 XP only on first-ever pick. */
+      selectPath(pathId) {
+        const isFirstPick = !this.data.selectedPath;
+        const prevXP = this.data.xp;
+        const bonus = isFirstPick ? 100 : 0;
+        this.data.selectedPath = pathId;
+        this.data.xp = prevXP + bonus;
+        this.data.mission = 'PATH_SELECTED';
+        this.save();
+        return { isFirstPick, prevXP, newXP: this.data.xp, bonus };
+      },
+    };
+
+    // Load persisted state early, hydrate after DOM ready
+    NumberlandState.load();
+    document.addEventListener('DOMContentLoaded', () => NumberlandState.hydrate());
+
+    /* ----------------- Hero CTA: start mission ----------------- */
+    (function () {
+      const btn = document.getElementById('startMissionBtn');
+      if (!btn) return;
+      const flash = document.getElementById('missionFlash');
+      const sr = document.getElementById('srStatus');
+      const level = document.getElementById('hudLevel');
+
+      btn.addEventListener('click', () => {
+        if (NumberlandState.data.heroStarted) return;
+        const prevXP = NumberlandState.data.xp;
+        NumberlandState.startHero();
+
+        btn.classList.add('is-charging');
+        setTimeout(() => btn.classList.remove('is-charging'), 900);
+        NumberlandState.pulseHUD();
+
         if (!reducedMotion) {
           flash.classList.add('play');
           setTimeout(() => flash.classList.remove('play'), 1100);
         }
 
-        // Update status → ACTIVE
         setTimeout(() => {
-          statusText.textContent = 'ACTIVE';
-          statusText.classList.remove('status-locked');
-          statusText.classList.add('status-active');
-          statusIcon.classList.remove('status-locked');
-          statusIcon.classList.add('status-active');
-          statusIcon.innerHTML = '<path d="M12 2l7 4v6c0 5-3.5 9-7 10-3.5-1-7-5-7-10V6l7-4z"/><path fill="#0A0E1A" d="M9 12l2 2 4-4"/>';
-
-          hud.classList.add('hud-active');
+          NumberlandState.setStatusActive();
           btn.classList.add('is-active');
           btn.querySelector('span').textContent = 'مأموریت فعال شد';
-
-          missionStatus.textContent = 'IN PROGRESS';
-          missionStatus.classList.remove('text-muted');
-          missionStatus.classList.add('status-active');
-
-          // XP animate
-          animateNumber(xpValue, 0, 50, 1400);
-          xpFill.style.width = '5%';
-
-          // Level pulse (stays at 0 until real progress; small hint)
-          level.classList.add('pulse');
-          setTimeout(() => level.classList.remove('pulse'), 1000);
-
-          sr.textContent = 'مأموریت آغاز شد. سطح بازیکن فعال شد و ۵۰ امتیاز تجربه اضافه شد.';
+          NumberlandState.setMission('IN_PROGRESS');
+          NumberlandState.animateXP(prevXP, NumberlandState.data.xp, 1400);
+          if (level) {
+            level.classList.add('pulse');
+            setTimeout(() => level.classList.remove('pulse'), 1000);
+          }
+          if (sr) sr.textContent = 'مأموریت آغاز شد. سطح بازیکن فعال شد و ۵۰ امتیاز تجربه اضافه شد.';
         }, 550);
+      });
+    })();
+
+    /* ----------------- Path cards (STEP 2) ----------------- */
+    (function () {
+      const cards = Array.from(document.querySelectorAll('.path-card'));
+      if (!cards.length) return;
+
+      const PATH_META = {
+        ai:      { fa: 'شهر هوش مصنوعی',    en: 'AI CITY' },
+        money:   { fa: 'منطقه پرداخت جهانی', en: 'MONEY DISTRICT' },
+        game:    { fa: 'جزیره گیمرها',       en: 'GAME ISLAND' },
+        access:  { fa: 'منطقه دسترسی',       en: 'ACCESS ZONE' },
+        premium: { fa: 'باشگاه پریمیوم',     en: 'PREMIUM CLUB' },
+        gift:    { fa: 'خزانه گیفت‌کارت',    en: 'GIFT VAULT' },
+      };
+
+      const sr = document.getElementById('srStatus');
+      let transitionLock = false;
+
+      /* Hover 3D tilt + mouse-tracked glow */
+      if (!reducedMotion) {
+        cards.forEach((card) => {
+          let raf = 0;
+          let tiltX = 0, tiltY = 0, mx = 50, my = 50;
+
+          card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const px = (e.clientX - rect.left) / rect.width;
+            const py = (e.clientY - rect.top) / rect.height;
+            mx = px * 100;
+            my = py * 100;
+            tiltX = (py - 0.5) * -5;
+            tiltY = (px - 0.5) * 6;
+
+            if (!raf) {
+              raf = requestAnimationFrame(() => {
+                card.style.setProperty('--mx', mx + '%');
+                card.style.setProperty('--my', my + '%');
+                if (!card.classList.contains('is-selecting')) {
+                  card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) translateY(-4px)`;
+                }
+                raf = 0;
+              });
+            }
+          });
+
+          card.addEventListener('mouseleave', () => {
+            card.style.removeProperty('--mx');
+            card.style.removeProperty('--my');
+            if (!card.classList.contains('is-selecting')) {
+              card.style.transform = '';
+            }
+          });
+        });
+      }
+
+      /* XP fly-up animation from card to HUD */
+      function xpFlyUp(cardEl, amount) {
+        if (reducedMotion) return;
+        const hud = document.getElementById('hudPanel');
+        if (!hud) return;
+        const cardRect = cardEl.getBoundingClientRect();
+        const hudRect = hud.getBoundingClientRect();
+        const startX = cardRect.left + cardRect.width / 2;
+        const startY = cardRect.top + cardRect.height / 2;
+        const endX = hudRect.left + hudRect.width / 2;
+        const endY = hudRect.top + hudRect.height / 2;
+
+        const badge = document.createElement('div');
+        badge.className = 'xp-fly';
+        badge.textContent = '+' + amount + ' XP';
+        badge.style.left = startX + 'px';
+        badge.style.top = startY + 'px';
+        document.body.appendChild(badge);
+
+        // Force reflow, then animate
+        void badge.offsetWidth;
+        requestAnimationFrame(() => {
+          const dx = endX - startX;
+          const dy = endY - startY;
+          badge.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.55)`;
+          badge.style.opacity = '0';
+        });
+        setTimeout(() => badge.remove(), 1300);
+      }
+
+      /* Handle click on a path card */
+      function selectCard(card) {
+        if (transitionLock) return;
+        const pathId = card.dataset.path;
+        if (!pathId) return;
+        // Already selected — no-op
+        if (NumberlandState.data.selectedPath === pathId) return;
+
+        const prevXP = NumberlandState.data.xp;
+        const isFirstPick = !NumberlandState.data.selectedPath;
+        const result = NumberlandState.selectPath(pathId);
+        transitionLock = true;
+
+        // Clear previous selected class from all
+        cards.forEach(c => c.classList.remove('is-selected'));
+        // Dim others, highlight current as selecting
+        cards.forEach(c => {
+          if (c === card) c.classList.add('is-selecting');
+          else c.classList.add('is-dimmed');
+        });
+
+        // XP fly-up first (during the pick animation)
+        if (result.bonus > 0) {
+          xpFlyUp(card, result.bonus);
+        }
+
+        // After the pick animation completes, commit the persistent selected state
+        setTimeout(() => {
+          card.classList.remove('is-selecting');
+          card.classList.add('is-selected');
+
+          // Sync HUD
+          if (result.bonus > 0) {
+            NumberlandState.animateXP(prevXP, result.newXP, 1200);
+          }
+          NumberlandState.setMission('PATH_SELECTED');
+          NumberlandState.pulseHUD();
+          NumberlandState.setStatusActive();
+
+          // Update progress dot 1 (mission 1 complete)
+          const dots = document.querySelectorAll('.path-progress-dot');
+          if (dots[0]) dots[0].classList.add('is-done');
+
+          // Announce
+          if (sr) {
+            const meta = PATH_META[pathId];
+            sr.textContent = `مسیر «${meta?.fa || pathId}» انتخاب شد. ${result.bonus > 0 ? 'صد امتیاز تجربه اضافه شد.' : ''}`;
+          }
+
+          transitionLock = false;
+        }, isFirstPick ? 700 : 500);
+      }
+
+      cards.forEach(card => {
+        card.addEventListener('click', () => selectCard(card));
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectCard(card);
+          }
+        });
       });
     })();
   </script>
