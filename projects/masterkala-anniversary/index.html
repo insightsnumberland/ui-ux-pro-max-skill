@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مسترکالا | ۷ سال همراهی شما، ۷ سال افتخار ما!</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              navy: '#1E3A5F',
+              deep: '#243B70',
+              blue: '#3F6BF5',
+              sky: '#5B8CFF',
+              cyan: '#06B6D4',
+              mint: '#22C7A5',
+              green: '#1FBF8F',
+              cream: '#FFF8E7',
+              soft: '#F4F7FF',
+            },
+          },
+          fontFamily: {
+            sans: ['Vazirmatn', 'system-ui', 'sans-serif'],
+          },
+          boxShadow: {
+            soft: '0 10px 40px -12px rgba(30, 58, 95, 0.15)',
+            softer: '0 6px 24px -12px rgba(30, 58, 95, 0.12)',
+            card: '0 20px 60px -20px rgba(30, 58, 95, 0.25)',
+            wheel: '0 30px 80px -30px rgba(30, 58, 95, 0.35)',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+    body {
+      font-family: 'Vazirmatn', system-ui, sans-serif;
+      background: #fff;
+      color: #1E3A5F;
+    }
+
+    /* Hero background: warm cream fading to soft sky */
+    .hero-bg {
+      background:
+        radial-gradient(1000px 500px at 15% -10%, #FFE8B0 0%, transparent 60%),
+        radial-gradient(900px 500px at 90% 0%, #C7E9FF 0%, transparent 60%),
+        linear-gradient(180deg, #FFF6DC 0%, #F1F7FF 100%);
+    }
+
+    /* Highlight underline on hero words */
+    .brush {
+      background-image: linear-gradient(120deg, #FDE68A 0%, #FBBF24 100%);
+      background-repeat: no-repeat;
+      background-size: 100% 42%;
+      background-position: 0 78%;
+      padding: 0 .15em;
+      border-radius: 6px;
+    }
+
+    /* Fortune wheel */
+    .wheel-wrap { position: relative; width: 320px; height: 320px; }
+    @media (min-width: 768px) { .wheel-wrap { width: 360px; height: 360px; } }
+
+    .wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 9999px;
+      position: relative;
+      transition: transform 6s cubic-bezier(.17,.67,.24,1);
+      background:
+        conic-gradient(
+          from -90deg,
+          #F97316 0deg 45deg,
+          #FACC15 45deg 90deg,
+          #22C55E 90deg 135deg,
+          #06B6D4 135deg 180deg,
+          #6366F1 180deg 225deg,
+          #EC4899 225deg 270deg,
+          #EF4444 270deg 315deg,
+          #F59E0B 315deg 360deg
+        );
+      box-shadow:
+        inset 0 0 0 12px #FFFFFF,
+        inset 0 0 0 18px #1E3A5F,
+        0 30px 60px -20px rgba(30,58,95,.35);
+    }
+    .wheel::before {
+      content: "";
+      position: absolute; inset: 20px;
+      border-radius: 9999px;
+      background:
+        conic-gradient(
+          from -90deg,
+          #F97316 0deg 45deg,
+          #FACC15 45deg 90deg,
+          #22C55E 90deg 135deg,
+          #06B6D4 135deg 180deg,
+          #6366F1 180deg 225deg,
+          #EC4899 225deg 270deg,
+          #EF4444 270deg 315deg,
+          #F59E0B 315deg 360deg
+        );
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.6);
+    }
+
+    /* Slice labels */
+    .wheel-labels {
+      position: absolute; inset: 0;
+      pointer-events: none;
+    }
+    .wheel-labels span {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform-origin: 0 0;
+      color: #fff;
+      font-weight: 700;
+      font-size: 12px;
+      white-space: nowrap;
+      text-shadow: 0 1px 2px rgba(0,0,0,.25);
+    }
+
+    /* Wheel center hub */
+    .wheel-hub {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 74px; height: 74px;
+      border-radius: 9999px;
+      background: linear-gradient(135deg, #3F6BF5, #243B70);
+      color: #fff;
+      display: grid; place-items: center;
+      box-shadow: 0 8px 24px -8px rgba(63,107,245,.6), inset 0 0 0 6px #fff;
+      z-index: 3;
+      font-weight: 900;
+      font-size: 22px;
+    }
+
+    /* Pointer */
+    .wheel-pointer {
+      position: absolute;
+      top: -14px; left: 50%;
+      transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 16px solid transparent;
+      border-right: 16px solid transparent;
+      border-top: 26px solid #EF4444;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,.2));
+      z-index: 4;
+    }
+
+    /* Confetti positioning helpers */
+    .confetti { position: absolute; pointer-events: none; user-select: none; }
+
+    /* Product hover */
+    .product-card { transition: transform .3s ease, box-shadow .3s ease; }
+    .product-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -20px rgba(30,58,95,.25); }
+
+    /* Countdown blob */
+    .count-tile {
+      width: 42px; height: 42px;
+      display: grid; place-items: center;
+      background: #fff;
+      color: #1E3A5F;
+      border-radius: 10px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      box-shadow: 0 6px 16px -8px rgba(0,0,0,.2);
+    }
+
+    /* Chip badge */
+    .chip {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .35rem .75rem;
+      border-radius: 9999px;
+      font-size: .8rem;
+      font-weight: 600;
+    }
+
+    /* Marquee row for brands */
+    .brand-row { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); align-items: center; gap: 2rem; }
+    @media (max-width: 768px) { .brand-row { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1.5rem; } }
+
+    /* Gift hexagon-ish rounded diamond */
+    .gift-shape {
+      width: 128px; height: 128px;
+      margin: 0 auto;
+      border-radius: 32px;
+      transform: rotate(45deg);
+      display: grid; place-items: center;
+      box-shadow: 0 20px 40px -18px rgba(30,58,95,.35);
+    }
+    .gift-shape > * { transform: rotate(-45deg); }
+
+    /* Achievement watermark */
+    .watermark {
+      background: linear-gradient(180deg, rgba(63,107,245,.10), rgba(63,107,245,0));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-weight: 900;
+      letter-spacing: .15em;
+    }
+
+    /* Scrollbar for horizontal scroll on mobile */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- ============================ HERO ============================ -->
+  <section class="hero-bg relative overflow-hidden pb-32">
+    <!-- Confetti decorations -->
+    <svg class="confetti top-10 right-[8%]" width="26" height="26" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2v20M2 12h20" stroke="#22C55E" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+    <svg class="confetti top-20 right-[22%]" width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="4" fill="#F97316"/>
+    </svg>
+    <svg class="confetti top-8 left-[18%]" width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M3 20c4-6 8-9 18-14" stroke="#EC4899" stroke-width="3" stroke-linecap="round" fill="none"/>
+    </svg>
+    <svg class="confetti top-24 left-[8%]" width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2v20M2 12h20" stroke="#3F6BF5" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+    <svg class="confetti top-32 right-[40%]" width="14" height="14" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="4" fill="#FBBF24"/>
+    </svg>
+
+    <!-- Top Nav -->
+    <header class="relative z-20">
+      <div class="max-w-6xl mx-auto px-6 pt-6 flex items-center justify-between">
+        <!-- Logo -->
+        <a href="#" class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-blue to-brand-deep grid place-items-center text-white font-black">
+            m
+          </div>
+          <span class="text-brand-navy font-extrabold text-xl">
+            <span class="text-brand-blue">m</span>aster<span class="text-brand-blue">K</span>ala
+          </span>
+        </a>
+        <!-- Search -->
+        <button class="flex items-center gap-2 bg-white/70 backdrop-blur border border-white shadow-softer text-brand-navy px-5 py-2.5 rounded-full font-medium hover:bg-white transition">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+            <path d="m20 20-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span>جستجو در سایت</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero content -->
+    <div class="relative z-10 max-w-4xl mx-auto px-6 mt-16 text-center">
+      <div class="inline-flex items-center gap-2 bg-white/70 backdrop-blur px-4 py-1.5 rounded-full text-sm text-brand-navy font-semibold border border-white/80">
+        <span class="w-2 h-2 rounded-full bg-brand-green"></span>
+        هفتمین سالگرد مسترکالا
+      </div>
+
+      <h1 class="mt-6 text-4xl md:text-6xl font-black leading-[1.15] text-brand-navy">
+        ۷ سال <span class="brush">همراهی شما</span>،
+        <br />
+        ۷ سال <span class="brush">افتخار ما!</span>
+      </h1>
+      <p class="mt-6 text-brand-navy/70 text-lg md:text-xl">
+        ممنون که همراه مسترکالا بودید
+      </p>
+
+      <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a href="#wheel" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-blue hover:bg-brand-deep text-white font-bold px-8 py-3.5 rounded-xl shadow-soft transition">
+          گردونه شانس رو بچرخان
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a href="#products" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-brand-navy border border-brand-navy/10 hover:border-brand-blue/50 font-bold px-8 py-3.5 rounded-xl shadow-softer transition">
+          مشاهده محصولات ویژه
+        </a>
+      </div>
+    </div>
+
+    <!-- More confetti at bottom of hero -->
+    <svg class="confetti bottom-16 right-[12%]" width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M3 12c4-6 14-6 18 0" stroke="#3F6BF5" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+    </svg>
+    <svg class="confetti bottom-20 left-[15%]" width="26" height="26" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2v20M2 12h20" stroke="#F97316" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+  </section>
+
+  <!-- ============================ WHEEL + INFO ============================ -->
+  <section id="wheel" class="relative -mt-24 z-10">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid md:grid-cols-2 gap-10 items-center">
+
+        <!-- Wheel -->
+        <div class="flex flex-col items-center">
+          <div class="wheel-wrap">
+            <div class="wheel-pointer"></div>
+            <div id="wheelSpin" class="wheel"></div>
+            <div class="wheel-labels" id="wheelLabels"></div>
+            <div class="wheel-hub">M</div>
+          </div>
+          <button id="spinBtn" class="mt-6 w-56 bg-brand-blue hover:bg-brand-deep text-white font-bold py-3.5 rounded-xl shadow-soft transition">
+            بچرخون
+          </button>
+        </div>
+
+        <!-- Info side -->
+        <div class="space-y-6">
+          <div class="flex items-start justify-between gap-4">
+            <h2 class="text-2xl md:text-3xl font-extrabold text-brand-navy leading-snug">
+              هر روز شانس خودت رو امتحان کن!
+            </h2>
+            <span class="chip bg-yellow-100 text-yellow-800 shrink-0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/></svg>
+              شانس باقی
+            </span>
+          </div>
+          <p class="text-brand-navy/70">
+            هر شب ساعت ۱۲ شانس چرخوندن گردونه بازیابی میشه.
+          </p>
+
+          <div class="grid gap-3">
+            <div class="flex items-center justify-between bg-white rounded-xl border border-brand-navy/10 shadow-softer px-4 py-3">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-brand-blue/10 text-brand-blue grid place-items-center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 16.92V21a1 1 0 0 1-1.11 1A19 19 0 0 1 2 4.11 1 1 0 0 1 3 3h4.09a1 1 0 0 1 1 .75l1 4a1 1 0 0 1-.29 1L7 10.5a16 16 0 0 0 6.5 6.5l1.75-1.79a1 1 0 0 1 1-.29l4 1a1 1 0 0 1 .75 1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                </div>
+                <span class="font-semibold text-brand-navy tracking-tight">۰۹۳۵ ۲۵۶ ۸۱۹۰</span>
+              </div>
+              <button class="text-sm text-brand-blue font-semibold hover:underline">خروج و تغییر حساب</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <button class="flex items-center justify-center gap-2 bg-white border border-brand-navy/10 rounded-xl py-3 font-semibold text-brand-navy hover:border-brand-blue/50 shadow-softer">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M22 11h-6M19 8v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                دعوت از دوستان
+              </button>
+              <button class="flex items-center justify-center gap-2 bg-brand-blue text-white rounded-xl py-3 font-bold hover:bg-brand-deep shadow-soft">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>
+                جوایز برنده شده
+              </button>
+            </div>
+          </div>
+
+          <p class="text-sm text-brand-navy/60 leading-7">
+            با شرکت در مأموریت‌های بیشتری، برای چرخوندن گردونه و برنده شدن جوایز
+            نقدی، محصولات ویژه و دیجیتال، شانس بیشتری داشته باشید.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ MISSIONS + LEADERBOARD ============================ -->
+  <section class="mt-20">
+    <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-8">
+
+      <!-- Missions -->
+      <div>
+        <h3 class="text-center md:text-right text-xl md:text-2xl font-extrabold text-brand-navy leading-snug">
+          با انجام مأموریت‌ها امتیاز بگیرید<br/>
+          و برنده جوایز بزرگ شوید!
+        </h3>
+        <ul class="mt-6 space-y-3">
+          <li class="flex items-center justify-between bg-white rounded-2xl border border-brand-navy/10 shadow-softer px-5 py-4">
+            <div class="flex items-center gap-3">
+              <span class="chip bg-emerald-50 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>۵ امتیاز</span>
+              <span class="text-brand-navy font-semibold">نا همر خرید</span>
+            </div>
+            <button class="w-7 h-7 rounded-lg bg-brand-navy text-white grid place-items-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </button>
+          </li>
+          <li class="flex items-center justify-between bg-white rounded-2xl border border-brand-navy/10 shadow-softer px-5 py-4">
+            <div class="flex items-center gap-3">
+              <span class="chip bg-emerald-50 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>۵ امتیاز</span>
+              <span class="text-brand-navy font-semibold">صد رمز جوابی</span>
+            </div>
+            <button class="w-7 h-7 rounded-lg bg-brand-navy text-white grid place-items-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </button>
+          </li>
+          <li class="flex items-center justify-between bg-white rounded-2xl border border-brand-navy/10 shadow-softer px-5 py-4">
+            <div class="flex items-center gap-3">
+              <span class="chip bg-emerald-50 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>۵ امتیاز</span>
+              <span class="text-brand-navy font-semibold">ثبت نظر برای هر محصول</span>
+            </div>
+            <button class="w-7 h-7 rounded-lg bg-brand-navy text-white grid place-items-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </button>
+          </li>
+          <li class="flex items-center justify-between bg-white rounded-2xl border border-brand-navy/10 shadow-softer px-5 py-4">
+            <div class="flex items-center gap-3">
+              <span class="chip bg-emerald-50 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>۵ امتیاز</span>
+              <span class="text-brand-navy font-semibold">فالو کردن اینستاگرام</span>
+            </div>
+            <button class="w-7 h-7 rounded-lg bg-brand-navy text-white grid place-items-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </button>
+          </li>
+          <li class="flex items-center justify-between bg-white rounded-2xl border border-brand-navy/10 shadow-softer px-5 py-4">
+            <div class="flex items-center gap-3">
+              <span class="chip bg-emerald-50 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>۵ امتیاز</span>
+              <span class="text-brand-navy font-semibold">سابسکرایب کردن یوتیوب</span>
+            </div>
+            <button class="w-7 h-7 rounded-lg bg-brand-navy text-white grid place-items-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </button>
+          </li>
+          <li class="flex items-center justify-between bg-white rounded-2xl border border-brand-navy/10 shadow-softer px-5 py-4">
+            <div class="flex items-center gap-3">
+              <span class="chip bg-emerald-50 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>۵ امتیاز</span>
+              <span class="text-brand-navy font-semibold">عضویت در کانال تلگرام</span>
+            </div>
+            <button class="w-7 h-7 rounded-lg bg-brand-navy text-white grid place-items-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Leaderboard -->
+      <div>
+        <h3 class="text-center md:text-right text-xl md:text-2xl font-extrabold text-brand-navy leading-snug">
+          شرکت‌کنندگان پرامتیاز
+        </h3>
+        <div class="mt-6 space-y-3">
+          <!-- rows -->
+          <div class="flex items-center justify-between bg-white rounded-2xl border border-brand-navy/10 shadow-softer px-5 py-3">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-lg bg-yellow-100 grid place-items-center">🏆</span>
+              <span class="text-brand-navy font-semibold">۰۹۱۲***۹۳۷۸</span>
+            </div>
+            <span class="text-sm text-brand-navy/70">۵۹۷۳۲ اعتبار</span>
+          </div>
+          <div class="flex items-center justify-between bg-white rounded-2xl border border-brand-navy/10 shadow-softer px-5 py-3">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-lg bg-amber-100 grid place-items-center">🥈</span>
+              <span class="text-brand-navy font-semibold">۰۹۱۲***۸۴۳۲</span>
+            </div>
+            <span class="text-sm text-brand-navy/70">۵۱۲۴۷ اعتبار</span>
+          </div>
+          <div class="flex items-center justify-between bg-white rounded-2xl border border-brand-navy/10 shadow-softer px-5 py-3">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-lg bg-orange-100 grid place-items-center">🥉</span>
+              <span class="text-brand-navy font-semibold">۰۹۱۲***۲۵۰۱</span>
+            </div>
+            <span class="text-sm text-brand-navy/70">۴۸۹۳۰ اعتبار</span>
+          </div>
+          <div class="flex items-center justify-between bg-white rounded-2xl border border-brand-navy/10 shadow-softer px-5 py-3">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-lg bg-slate-100 grid place-items-center text-slate-600 font-bold text-sm">۴</span>
+              <span class="text-brand-navy font-semibold">۰۹۱۲***۱۱۴۷</span>
+            </div>
+            <span class="text-sm text-brand-navy/70">۴۳۰۲۱ اعتبار</span>
+          </div>
+          <div class="flex items-center justify-between bg-white rounded-2xl border border-brand-navy/10 shadow-softer px-5 py-3">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-lg bg-slate-100 grid place-items-center text-slate-600 font-bold text-sm">۵</span>
+              <span class="text-brand-navy font-semibold">۰۹۱۲***۷۷۰۲</span>
+            </div>
+            <span class="text-sm text-brand-navy/70">۴۱۸۹۹ اعتبار</span>
+          </div>
+          <div class="flex items-center justify-between bg-white rounded-2xl border border-brand-navy/10 shadow-softer px-5 py-3">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-lg bg-slate-100 grid place-items-center text-slate-600 font-bold text-sm">۶</span>
+              <span class="text-brand-navy font-semibold">۰۹۱۲***۳۳۲۴</span>
+            </div>
+            <span class="text-sm text-brand-navy/70">۳۸۷۱۲ اعتبار</span>
+          </div>
+
+          <div class="mt-4 flex items-center justify-between bg-brand-blue text-white rounded-2xl px-5 py-4 shadow-soft">
+            <span class="font-semibold">امتیاز شما (رتبه ۵۹۳)</span>
+            <span class="font-bold">۵۱۲ اعتبار</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================ GIFTS ============================ -->
+  <section class="mt-24">
+    <div class="max-w-6xl mx-auto px-6 text-center">
+      <h2 class="text-2xl md:text-3xl font-extrabold text-brand-navy">
+        هدیه‌های تولد مسترکالا
+      </h2>
+      <p class="mt-3 text-brand-navy/70 max-w-2xl mx-auto">
+        با انجام مأموریت‌ها و کسب امتیاز، شانس خود را برای برنده شدن یکی از این هدیه‌های ویژه بالا ببرید و در قرعه‌کشی تولد مسترکالا شرکت کنید.
+      </p>
+
+      <div class="mt-14 grid grid-cols-2 md:grid-cols-4 gap-8">
+        <!-- Gift 1: PS5 -->
+        <div class="text-center">
+          <div class="gift-shape bg-gradient-to-br from-blue-100 to-blue-50">
+            <svg width="60" height="60" viewBox="0 0 64 64" fill="none">
+              <path d="M12 22h40c4 0 6 2 6 6v14c0 3-2 5-5 5H11c-3 0-5-2-5-5V28c0-4 2-6 6-6z" fill="#3F6BF5"/>
+              <path d="M22 30v6M42 30v6" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="30" cy="33" r="2" fill="#fff"/>
+              <circle cx="34" cy="37" r="2" fill="#fff"/>
+            </svg>
+          </div>
+          <p class="mt-8 font-extrabold text-brand-navy">نفر اول</p>
+          <p class="text-brand-navy/70 text-sm mt-1">دستگاه PS5 Slim</p>
+        </div>
+        <!-- Gift 2: Gold coin -->
+        <div class="text-center">
+          <div class="gift-shape bg-gradient-to-br from-amber-100 to-yellow-50">
+            <svg width="60" height="60" viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="22" fill="#F59E0B"/>
+              <circle cx="32" cy="32" r="17" fill="#FBBF24"/>
+              <text x="32" y="39" text-anchor="middle" font-size="20" font-weight="800" fill="#92400E">₪</text>
+            </svg>
+          </div>
+          <p class="mt-8 font-extrabold text-brand-navy">نفر دوم تا دهم</p>
+          <p class="text-brand-navy/70 text-sm mt-1">سکه پارسیان نیم گرمی</p>
+        </div>
+        <!-- Gift 3: Watch -->
+        <div class="text-center">
+          <div class="gift-shape bg-gradient-to-br from-slate-100 to-white">
+            <svg width="60" height="60" viewBox="0 0 64 64" fill="none">
+              <rect x="18" y="18" width="28" height="34" rx="6" fill="#1E3A5F"/>
+              <rect x="21" y="21" width="22" height="24" rx="3" fill="#111827"/>
+              <path d="M32 27v5l3 2" stroke="#22C7A5" stroke-width="2" stroke-linecap="round"/>
+              <path d="M24 18v-4h16v4M24 52v4h16v-4" fill="#1E3A5F"/>
+            </svg>
+          </div>
+          <p class="mt-8 font-extrabold text-brand-navy">نفر یازدهم تا صدم</p>
+          <p class="text-brand-navy/70 text-sm mt-1">ساعت هوشمند<br/>۲ میلیون تومانی</p>
+        </div>
+        <!-- Gift 4: Cash -->
+        <div class="text-center">
+          <div class="gift-shape bg-gradient-to-br from-emerald-100 to-emerald-50">
+            <svg width="60" height="60" viewBox="0 0 64 64" fill="none">
+              <rect x="10" y="18" width="44" height="28" rx="4" fill="#22C7A5"/>
+              <circle cx="32" cy="32" r="8" fill="#fff"/>
+              <text x="32" y="36" text-anchor="middle" font-size="10" font-weight="800" fill="#22C7A5">﷼</text>
+            </svg>
+          </div>
+          <p class="mt-8 font-extrabold text-brand-navy">نفر صدم تا ۵ هزارم</p>
+          <p class="text-brand-navy/70 text-sm mt-1">۱۰۰ هزار تومان جایزه<br/>نقدی (شارژ کیف پول)</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ ACHIEVEMENTS + 7 YEARS CARD ============================ -->
+  <section class="mt-24 relative">
+    <div class="max-w-6xl mx-auto px-6">
+      <!-- Watermark -->
+      <div class="text-center watermark text-6xl md:text-8xl select-none">MASTER KALA</div>
+
+      <div class="grid md:grid-cols-2 gap-10 -mt-8 md:-mt-14 items-center">
+        <!-- Left: achievements -->
+        <div>
+          <h3 class="text-2xl md:text-3xl font-extrabold text-brand-navy text-center md:text-right">
+            همه این‌ها با <span class="brush">همراهی شما</span> ممکن شد
+          </h3>
+
+          <div class="mt-8 bg-white rounded-2xl border border-brand-navy/10 shadow-softer p-6">
+            <div class="flex items-center gap-2 text-brand-blue font-bold">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2l3 6 6 .8-4.5 4.4 1 6.3L12 16.9 6.5 19.5l1-6.3L3 8.8 9 8z" fill="currentColor"/></svg>
+              دستاوردهای ما در سال ۱۴۰۳
+            </div>
+            <ul class="mt-4 space-y-2 text-brand-navy/80 text-sm leading-7">
+              <li>افتتاح و شروع فعالیت شعبه ۸ مشهد تنسیم</li>
+              <li>افزایش امکانات پرداخت اقساطی از طریق سرویس اسنپ‌پی به صورت آنلاین و حضوری</li>
+              <li>اخذ نمایندگی از شرکت هایمکث‌مچ سلامت خودران</li>
+            </ul>
+          </div>
+
+          <div class="mt-8 grid grid-cols-2 gap-6 text-center">
+            <div>
+              <div class="text-3xl font-black text-brand-navy">۹۸٪</div>
+              <div class="text-brand-navy/70 text-sm mt-1">رضایت مشتریان</div>
+            </div>
+            <div>
+              <div class="text-3xl font-black text-brand-navy">+ ۱٬۰۰۰٬۰۰۰</div>
+              <div class="text-brand-navy/70 text-sm mt-1">سفارش</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: 7 years green card -->
+        <div class="relative">
+          <div class="rounded-3xl bg-gradient-to-br from-brand-mint to-brand-green p-10 text-center shadow-card relative overflow-hidden">
+            <!-- confetti inside card -->
+            <svg class="confetti top-3 right-4" width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20" stroke="#FBBF24" stroke-width="2.4" stroke-linecap="round"/></svg>
+            <svg class="confetti bottom-3 left-4" width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" fill="#FDE68A"/></svg>
+
+            <div class="mx-auto w-20 h-20 rounded-2xl bg-white grid place-items-center shadow-soft">
+              <span class="text-brand-blue font-black text-3xl">m</span>
+            </div>
+            <div class="mt-4 text-white/90 font-extrabold text-lg">masterKala</div>
+            <div class="mt-6 text-white font-black text-2xl md:text-3xl">
+              ۷ سال همراه شما
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ COUNTDOWN + PRODUCTS ============================ -->
+  <section id="products" class="mt-24">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="bg-brand-navy rounded-t-3xl overflow-hidden relative shadow-card">
+        <!-- Confetti decorations -->
+        <svg class="confetti top-4 right-6" width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9L4.9 19.1" stroke="#FBBF24" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg class="confetti top-6 right-24" width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" fill="#EC4899"/></svg>
+
+        <div class="px-6 md:px-10 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="text-white text-center md:text-right">
+            <div class="text-lg md:text-xl font-extrabold">به بهونه‌ی ۷ سالگی</div>
+            <div class="text-2xl md:text-3xl font-black mt-1">مسترکالا</div>
+          </div>
+          <!-- Countdown -->
+          <div class="flex items-center gap-2" id="countdown">
+            <div class="flex flex-col items-center">
+              <div class="count-tile" data-part="hours">۰۲</div>
+              <div class="text-white/70 text-[11px] mt-1">ساعت</div>
+            </div>
+            <span class="text-white/70">:</span>
+            <div class="flex flex-col items-center">
+              <div class="count-tile" data-part="minutes">۰۴</div>
+              <div class="text-white/70 text-[11px] mt-1">دقیقه</div>
+            </div>
+            <span class="text-white/70">:</span>
+            <div class="flex flex-col items-center">
+              <div class="count-tile" data-part="seconds">۳۰</div>
+              <div class="text-white/70 text-[11px] mt-1">ثانیه</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product carousel -->
+        <div class="relative px-6 md:px-10 pb-8">
+          <div class="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-2">
+            <!-- Product card template repeated -->
+            <!-- 1 -->
+            <article class="product-card snap-start shrink-0 w-56 bg-white rounded-2xl overflow-hidden shadow-softer">
+              <div class="relative bg-slate-100 h-40">
+                <span class="absolute top-2 right-2 chip bg-brand-blue text-white text-[10px]">ویژه تولد</span>
+                <div class="w-full h-full grid place-items-center">
+                  <svg width="80" height="80" viewBox="0 0 64 64" fill="none">
+                    <ellipse cx="32" cy="28" rx="14" ry="20" fill="#1E293B"/>
+                    <ellipse cx="32" cy="28" rx="6" ry="9" fill="#111827"/>
+                    <circle cx="32" cy="42" r="4" fill="#64748B"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="p-3">
+                <h4 class="text-brand-navy font-bold text-sm leading-6 line-clamp-2">ایرباز بی‌سیم Baseus لبz DGWM60101</h4>
+                <div class="mt-3 flex items-center justify-between">
+                  <div>
+                    <div class="text-[11px] text-slate-400 line-through">۴۹۵٬۰۰۰ تومان</div>
+                    <div class="text-brand-blue font-extrabold text-sm">۳۹۵٬۰۰۰ تومان</div>
+                  </div>
+                  <span class="chip bg-emerald-100 text-emerald-700 text-[11px]">۲۰٪</span>
+                </div>
+              </div>
+            </article>
+            <!-- 2 -->
+            <article class="product-card snap-start shrink-0 w-56 bg-white rounded-2xl overflow-hidden shadow-softer">
+              <div class="relative bg-slate-100 h-40">
+                <span class="absolute top-2 right-2 chip bg-brand-blue text-white text-[10px]">ویژه تولد</span>
+                <div class="w-full h-full grid place-items-center">
+                  <svg width="80" height="80" viewBox="0 0 64 64" fill="none">
+                    <ellipse cx="32" cy="28" rx="14" ry="20" fill="#0F172A"/>
+                    <ellipse cx="32" cy="28" rx="6" ry="9" fill="#0B1220"/>
+                    <circle cx="32" cy="42" r="4" fill="#475569"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="p-3">
+                <h4 class="text-brand-navy font-bold text-sm leading-6 line-clamp-2">ایرباز بی‌سیم Baseus بلوتوث</h4>
+                <div class="mt-3 flex items-center justify-between">
+                  <div>
+                    <div class="text-[11px] text-slate-400 line-through">۵۲۰٬۰۰۰ تومان</div>
+                    <div class="text-brand-blue font-extrabold text-sm">۴۲۰٬۰۰۰ تومان</div>
+                  </div>
+                  <span class="chip bg-emerald-100 text-emerald-700 text-[11px]">۱۸٪</span>
+                </div>
+              </div>
+            </article>
+            <!-- 3 -->
+            <article class="product-card snap-start shrink-0 w-56 bg-white rounded-2xl overflow-hidden shadow-softer">
+              <div class="relative bg-slate-100 h-40">
+                <span class="absolute top-2 right-2 chip bg-brand-blue text-white text-[10px]">ویژه تولد</span>
+                <div class="w-full h-full grid place-items-center">
+                  <svg width="80" height="80" viewBox="0 0 64 64" fill="none">
+                    <ellipse cx="32" cy="28" rx="14" ry="20" fill="#111827"/>
+                    <ellipse cx="32" cy="28" rx="6" ry="9" fill="#020617"/>
+                    <circle cx="32" cy="42" r="4" fill="#334155"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="p-3">
+                <h4 class="text-brand-navy font-bold text-sm leading-6 line-clamp-2">ایرباز بی‌سیم Baseus مدل C1</h4>
+                <div class="mt-3 flex items-center justify-between">
+                  <div>
+                    <div class="text-[11px] text-slate-400 line-through">۴۷۰٬۰۰۰ تومان</div>
+                    <div class="text-brand-blue font-extrabold text-sm">۳۷۹٬۰۰۰ تومان</div>
+                  </div>
+                  <span class="chip bg-emerald-100 text-emerald-700 text-[11px]">۱۹٪</span>
+                </div>
+              </div>
+            </article>
+            <!-- 4 -->
+            <article class="product-card snap-start shrink-0 w-56 bg-white rounded-2xl overflow-hidden shadow-softer">
+              <div class="relative bg-slate-100 h-40">
+                <span class="absolute top-2 right-2 chip bg-brand-blue text-white text-[10px]">ویژه تولد</span>
+                <div class="w-full h-full grid place-items-center">
+                  <svg width="80" height="80" viewBox="0 0 64 64" fill="none">
+                    <ellipse cx="32" cy="28" rx="14" ry="20" fill="#0F172A"/>
+                    <ellipse cx="32" cy="28" rx="6" ry="9" fill="#111827"/>
+                    <circle cx="32" cy="42" r="4" fill="#64748B"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="p-3">
+                <h4 class="text-brand-navy font-bold text-sm leading-6 line-clamp-2">هدفون بی‌سیم Baseus H1</h4>
+                <div class="mt-3 flex items-center justify-between">
+                  <div>
+                    <div class="text-[11px] text-slate-400 line-through">۵۹۰٬۰۰۰ تومان</div>
+                    <div class="text-brand-blue font-extrabold text-sm">۴۹۰٬۰۰۰ تومان</div>
+                  </div>
+                  <span class="chip bg-emerald-100 text-emerald-700 text-[11px]">۱۷٪</span>
+                </div>
+              </div>
+            </article>
+            <!-- 5 -->
+            <article class="product-card snap-start shrink-0 w-56 bg-white rounded-2xl overflow-hidden shadow-softer">
+              <div class="relative bg-slate-100 h-40">
+                <span class="absolute top-2 right-2 chip bg-brand-blue text-white text-[10px]">ویژه تولد</span>
+                <div class="w-full h-full grid place-items-center">
+                  <svg width="80" height="80" viewBox="0 0 64 64" fill="none">
+                    <ellipse cx="32" cy="28" rx="14" ry="20" fill="#020617"/>
+                    <ellipse cx="32" cy="28" rx="6" ry="9" fill="#0F172A"/>
+                    <circle cx="32" cy="42" r="4" fill="#475569"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="p-3">
+                <h4 class="text-brand-navy font-bold text-sm leading-6 line-clamp-2">هندزفری Baseus استریو</h4>
+                <div class="mt-3 flex items-center justify-between">
+                  <div>
+                    <div class="text-[11px] text-slate-400 line-through">۳۹۹٬۰۰۰ تومان</div>
+                    <div class="text-brand-blue font-extrabold text-sm">۲۹۹٬۰۰۰ تومان</div>
+                  </div>
+                  <span class="chip bg-emerald-100 text-emerald-700 text-[11px]">۲۵٪</span>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      <!-- Partners -->
+      <div class="bg-white rounded-b-3xl border border-t-0 border-brand-navy/10 px-6 md:px-10 py-8">
+        <p class="text-center text-brand-navy/60 text-sm font-semibold mb-6">برندهای همکار</p>
+        <div class="brand-row text-brand-navy/60 font-bold text-lg">
+          <div class="text-center flex items-center justify-center gap-1">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 16c4-8 12-8 16 0" stroke="currentColor" stroke-width="2"/></svg>
+            بامیلو
+          </div>
+          <div class="text-center">NAMAVA</div>
+          <div class="text-center italic">milli</div>
+          <div class="text-center">ساتیک</div>
+          <div class="text-center">شب</div>
+          <div class="text-center flex items-center justify-center gap-1">
+            <span class="w-4 h-4 rounded-full bg-red-500"></span>
+            <span class="w-4 h-4 rounded-full bg-amber-400 -mr-2"></span>
+          </div>
+          <div class="text-center">Biva</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ FOOTER ============================ -->
+  <footer class="mt-24 bg-brand-sky text-white">
+    <div class="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
+      <!-- Logo -->
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-white/20 grid place-items-center text-white font-black">m</div>
+        <span class="text-white font-extrabold text-xl">masterKala</span>
+      </div>
+
+      <!-- CTAs -->
+      <div class="flex flex-col sm:flex-row items-center gap-2">
+        <button class="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl font-semibold border border-white/20">
+          گردونه شانس رو بچرخان
+        </button>
+        <button class="bg-white text-brand-blue px-5 py-2.5 rounded-xl font-bold hover:bg-white/90">
+          مشاهده محصولات ویژه
+        </button>
+      </div>
+
+      <!-- Socials -->
+      <div class="flex items-center gap-4">
+        <p class="text-white/80 text-sm">ما را در شبکه‌های اجتماعی دنبال کنید</p>
+        <div class="flex items-center gap-2">
+          <a class="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 grid place-items-center" href="#" aria-label="Instagram">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+          </a>
+          <a class="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 grid place-items-center" href="#" aria-label="Telegram">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 3 2 11l6 2 2 6 4-4 6 5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          </a>
+          <a class="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 grid place-items-center" href="#" aria-label="YouTube">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="6" width="19" height="12" rx="3" stroke="currentColor" stroke-width="1.6"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="border-t border-white/15">
+      <div class="max-w-6xl mx-auto px-6 py-4 text-center text-white/70 text-xs">
+        © ۱۴۰۳ مسترکالا. تمامی حقوق محفوظ است.
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================ JS ============================ -->
+  <script>
+    // Wheel labels
+    (function () {
+      const labels = ['۱۰٪ تخفیف', '۵۰ اعتبار', 'پوچ', 'شارژ ۲۰ت', 'کد هدیه', 'سکه', 'باج ۱۰۰ت', '۵ اعتبار'];
+      const wrap = document.getElementById('wheelLabels');
+      const radius = 110;
+      labels.forEach((txt, i) => {
+        const angle = (i * 45) + 22.5 - 90; // center of slice
+        const rad = (angle * Math.PI) / 180;
+        const x = Math.cos(rad) * radius;
+        const y = Math.sin(rad) * radius;
+        const el = document.createElement('span');
+        el.textContent = txt;
+        el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) rotate(${angle + 90}deg)`;
+        wrap.appendChild(el);
+      });
+    })();
+
+    // Spin the wheel
+    (function () {
+      const wheel = document.getElementById('wheelSpin');
+      const btn = document.getElementById('spinBtn');
+      let current = 0;
+      btn.addEventListener('click', () => {
+        const extra = 360 * 5 + Math.floor(Math.random() * 360);
+        current += extra;
+        wheel.style.transform = `rotate(${current}deg)`;
+        btn.disabled = true;
+        btn.textContent = 'در حال چرخش...';
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = 'دوباره بچرخون';
+        }, 6200);
+      });
+    })();
+
+    // Countdown timer
+    (function () {
+      const toFa = n => n.toString().padStart(2, '0').replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+      const el = document.getElementById('countdown');
+      let h = 2, m = 4, s = 30;
+      setInterval(() => {
+        s--;
+        if (s < 0) { s = 59; m--; }
+        if (m < 0) { m = 59; h--; }
+        if (h < 0) { h = 23; }
+        el.querySelector('[data-part="hours"]').textContent = toFa(h);
+        el.querySelector('[data-part="minutes"]').textContent = toFa(m);
+        el.querySelector('[data-part="seconds"]').textContent = toFa(s);
+      }, 1000);
+    })();
+  </script>
+</body>
+</html>
