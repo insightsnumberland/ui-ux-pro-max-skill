@@ -718,7 +718,8 @@ if (document.getElementById('tab-dashboard')) {
         if (!pending) return;
         this.disabled = true;
         this.textContent = 'در حال ثبت...';
-        await NB_DB.addRequest(pending);
+        const saved = await NB_DB.addRequest(pending);
+        if (saved && saved.id) pending.id = saved.id; // use server-assigned Snowflake ID
         setTimeout(async () => {
             pending = null;
             document.getElementById('req-form').reset();

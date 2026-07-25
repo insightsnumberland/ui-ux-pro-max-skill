@@ -1,48 +1,160 @@
 """
 NumberLand Local DB Server
 Run:  python server.py
-Deps: pip install flask flask-cors
+Deps: pip install flask flask-cors nlbone
 
 Data is saved to numberland.db (SQLite) next to this file.
+
+nlbone features used:
+  - nlbone.utils.normalize_mobile  — Iranian mobile number normalization
+  - Snowflake ID generation        — distributed unique IDs for requests
+  - Fernet encryption (optional)   — set FERNET_KEY env var to encrypt
+                                     mobile/email at rest in SQLite
 """
-from flask import Flask, request, jsonify
+import base64
+import hashlib
+import json
+import os
+import sqlite3
+import threading
+import time
+from datetime import datetime, timezone
+
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-import sqlite3, json, os
-from datetime import datetime
 
-app  = Flask(__name__)
+# ── nlbone: mobile normalization ───────────────────────────────────
+try:
+    from nlbone.utils.normalize_mobile import normalize_mobile as _normalize_mobile
+    def normalize_mobile(mobile: str) -> str:
+        return _normalize_mobile(mobile, strip_zero=False, add_country_code=False)
+except ImportError:
+    import re
+    def normalize_mobile(mobile: str) -> str:
+        if not mobile:
+            return ""
+        mobile = re.sub(r"\D", "", str(mobile))
+        if mobile.startswith("0098"):
+            mobile = mobile[4:]
+        elif mobile.startswith("98") and len(mobile) > 10:
+            mobile = mobile[2:]
+        return mobile
+
+# ── Snowflake ID generator ─────────────────────────────────────────
+# Copied from nlbone.adapters.snowflake (no .env dependency needed here)
+class _Snowflake:
+    WORKER_ID_BITS     = 5
+    DATACENTER_ID_BITS = 5
+    SEQUENCE_BITS      = 12
+    MAX_WORKER_ID      = (1 << WORKER_ID_BITS) - 1       # 31
+    MAX_DATACENTER_ID  = (1 << DATACENTER_ID_BITS) - 1   # 31
+    SEQUENCE_MASK      = (1 << SEQUENCE_BITS) - 1         # 4095
+    WORKER_ID_SHIFT    = SEQUENCE_BITS
+    DATACENTER_ID_SHIFT= SEQUENCE_BITS + WORKER_ID_BITS
+    TIMESTAMP_SHIFT    = SEQUENCE_BITS + WORKER_ID_BITS + DATACENTER_ID_BITS
+    EPOCH              = int(datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp() * 1000)
+
+    def __init__(self, datacenter_id=1, worker_id=1):
+        self.datacenter_id = max(0, min(datacenter_id, self.MAX_DATACENTER_ID))
+        self.worker_id     = max(0, min(worker_id,     self.MAX_WORKER_ID))
+        self.sequence      = 0
+        self.last_ts       = -1
+        self._lock         = threading.Lock()
+
+    def _ts(self) -> int:
+        return int(time.time() * 1000)
+
+    def _wait(self, last: int) -> int:
+        ts = self._ts()
+        while ts <= last:
+            ts = self._ts()
+        return ts
+
+    def next_id(self) -> str:
+        with self._lock:
+            ts = self._ts()
+            if ts < self.last_ts:
+                ts = self._wait(self.last_ts)
+            if ts == self.last_ts:
+                self.sequence = (self.sequence + 1) & self.SEQUENCE_MASK
+                if self.sequence == 0:
+                    ts = self._wait(self.last_ts)
+            else:
+                self.sequence = 0
+            self.last_ts = ts
+            sf = (
+                ((ts - self.EPOCH) << self.TIMESTAMP_SHIFT)
+                | (self.datacenter_id << self.DATACENTER_ID_SHIFT)
+                | (self.worker_id     << self.WORKER_ID_SHIFT)
+                | self.sequence
+            )
+            return str(sf)
+
+_DC = int(os.environ.get("SNOWFLAKE_DATACENTER_ID", "1"))
+_WK = int(os.environ.get("SNOWFLAKE_WORKER_ID", "1"))
+SNOWFLAKE = _Snowflake(datacenter_id=_DC, worker_id=_WK)
+
+# ── Fernet encryption (optional) ───────────────────────────────────
+_fernet = None
+_fernet_key = os.environ.get("FERNET_KEY", "").strip()
+if _fernet_key:
+    try:
+        from cryptography.fernet import Fernet
+        _key_bytes = base64.urlsafe_b64encode(hashlib.sha256(_fernet_key.encode()).digest())
+        _fernet    = Fernet(_key_bytes)
+        print("[nlbone] Fernet encryption enabled.")
+    except ImportError:
+        print("[nlbone] cryptography not installed — Fernet disabled.")
+
+def _enc(text: str) -> str:
+    if _fernet and text:
+        return _fernet.encrypt(text.encode()).decode()
+    return text or ""
+
+def _dec(token: str) -> str:
+    if _fernet and token:
+        try:
+            return _fernet.decrypt(token.encode()).decode()
+        except Exception:
+            return token
+    return token or ""
+
+
+# ── Flask app ──────────────────────────────────────────────────────
+app     = Flask(__name__)
 CORS(app)
-
 DB_PATH = os.path.join(os.path.dirname(__file__), 'numberland.db')
 
-# ── helpers ───────────────────────────────────────────────────────
+
+# ── helpers ────────────────────────────────────────────────────────
 def db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
-def now_ms():
+def now_ms() -> int:
     return int(datetime.now().timestamp() * 1000)
 
-def jdump(v):
+def jdump(v) -> str:
     return json.dumps(v, ensure_ascii=False)
 
 def jload(s):
     try:    return json.loads(s)
     except: return s
 
-# ── init schema ───────────────────────────────────────────────────
+
+# ── init schema ────────────────────────────────────────────────────
 def init_db():
     conn = db()
     conn.executescript('''
         CREATE TABLE IF NOT EXISTS users (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
-            mobile       TEXT UNIQUE,
-            email        TEXT,
-            company      TEXT,
-            source       TEXT,
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            mobile        TEXT UNIQUE,
+            email         TEXT,
+            company       TEXT,
+            source        TEXT,
             registered_at TEXT,
-            created_at   INTEGER
+            created_at    INTEGER
         );
 
         CREATE TABLE IF NOT EXISTS requests (
@@ -93,22 +205,38 @@ def list_users():
     conn = db()
     rows = conn.execute('SELECT * FROM users ORDER BY created_at DESC').fetchall()
     conn.close()
-    return jsonify([dict(r) for r in rows])
+    result = []
+    for r in rows:
+        row = dict(r)
+        row['mobile'] = _dec(row['mobile'])
+        row['email']  = _dec(row['email'])
+        result.append(row)
+    return jsonify(result)
+
 
 @app.route('/api/users', methods=['POST'])
 def add_user():
-    d = request.json or {}
-    conn = db()
+    d      = request.json or {}
+    raw_mobile = d.get('mobile', '')
+    mobile = normalize_mobile(raw_mobile)   # nlbone: normalize Iranian number
+    email  = d.get('email', '')
+    conn   = db()
     try:
         conn.execute(
-            'INSERT OR IGNORE INTO users (mobile,email,company,source,registered_at,created_at) VALUES (?,?,?,?,?,?)',
-            (d.get('mobile'), d.get('email'), d.get('company'),
-             d.get('source'), d.get('registered_at'), now_ms())
+            'INSERT OR IGNORE INTO users '
+            '(mobile, email, company, source, registered_at, created_at) '
+            'VALUES (?,?,?,?,?,?)',
+            (_enc(mobile), _enc(email),
+             d.get('company'), d.get('source'),
+             d.get('registered_at'), now_ms())
         )
         conn.commit()
-        row = conn.execute('SELECT id FROM users WHERE mobile=?', (d.get('mobile'),)).fetchone()
+        # look up by encrypted mobile
+        row = conn.execute(
+            'SELECT id FROM users WHERE mobile=?', (_enc(mobile),)
+        ).fetchone()
         conn.close()
-        return jsonify({'id': row['id'] if row else None})
+        return jsonify({'id': row['id'] if row else None, 'mobile': mobile})
     except Exception as e:
         conn.close()
         return jsonify({'error': str(e)}), 400
@@ -121,38 +249,45 @@ def add_user():
 def list_requests():
     status = request.args.get('status')
     search = (request.args.get('search') or '').lower()
-    conn = db()
-    rows = conn.execute('SELECT data FROM requests ORDER BY saved_at DESC').fetchall()
+    conn   = db()
+    rows   = conn.execute('SELECT data FROM requests ORDER BY saved_at DESC').fetchall()
     conn.close()
     items = [jload(r['data']) for r in rows]
     if status: items = [r for r in items if r.get('status') == status]
     if search:
         items = [r for r in items if
-                 search in (r.get('id') or '').lower() or
+                 search in (r.get('id')      or '').lower() or
                  search in (r.get('product') or '').lower() or
-                 search in (r.get('email') or '').lower()]
+                 search in (r.get('email')   or '').lower()]
     return jsonify(items)
+
 
 @app.route('/api/requests', methods=['POST'])
 def add_request():
-    d = request.json or {}
+    d  = request.json or {}
+    # ── Snowflake: server generates the canonical ID ──────────────
+    req_id = SNOWFLAKE.next_id()
+    d['id'] = req_id
+    # ─────────────────────────────────────────────────────────────
+    ts = now_ms()
     conn = db()
     conn.execute(
         '''INSERT OR REPLACE INTO requests
            (id, product, email, quantity, status, date, saved_at, data)
            VALUES (?,?,?,?,?,?,?,?)''',
-        (d.get('id'), d.get('product'), d.get('email'), d.get('quantity'),
-         d.get('status','PENDING'), d.get('date'), now_ms(), jdump(d))
+        (req_id, d.get('product'), d.get('email'), d.get('quantity'),
+         d.get('status', 'PENDING'), d.get('date'), ts, jdump(d))
     )
     conn.commit()
     conn.close()
-    return jsonify({'ok': True})
+    return jsonify({'ok': True, 'id': req_id})
+
 
 @app.route('/api/requests/<req_id>', methods=['PATCH'])
 def update_request(req_id):
     updates = request.json or {}
-    conn = db()
-    row = conn.execute('SELECT data FROM requests WHERE id=?', (req_id,)).fetchone()
+    conn    = db()
+    row     = conn.execute('SELECT data FROM requests WHERE id=?', (req_id,)).fetchone()
     if not row:
         conn.close()
         return jsonify({'error': 'not found'}), 404
@@ -175,31 +310,36 @@ def update_request(req_id):
 def cache_products():
     cats = request.json or {}
     conn = db()
-    ts = now_ms()
+    ts   = now_ms()
     for cat, items in cats.items():
         for p in items:
             ckey = f"{cat}:{p.get('id')}"
             conn.execute(
-                'INSERT OR REPLACE INTO products (ckey, category, cached_at, data) VALUES (?,?,?,?)',
+                'INSERT OR REPLACE INTO products (ckey, category, cached_at, data) '
+                'VALUES (?,?,?,?)',
                 (ckey, cat, ts, jdump(p))
             )
     conn.commit()
     conn.close()
     return jsonify({'ok': True})
 
+
 @app.route('/api/products/cache', methods=['GET'])
 def get_product_cache():
     max_age = int(request.args.get('maxAge', 30 * 60 * 1000))
     cutoff  = now_ms() - max_age
     conn    = db()
-    rows    = conn.execute('SELECT * FROM products WHERE cached_at > ?', (cutoff,)).fetchall()
+    rows    = conn.execute(
+        'SELECT * FROM products WHERE cached_at > ?', (cutoff,)
+    ).fetchall()
     conn.close()
     if not rows:
         return jsonify(None)
     result = {}
     for r in rows:
         cat = r['category']
-        if cat not in result: result[cat] = []
+        if cat not in result:
+            result[cat] = []
         result[cat].append(jload(r['data']))
     return jsonify(result)
 
@@ -213,6 +353,7 @@ def get_setting(key):
     row  = conn.execute('SELECT value FROM settings WHERE key=?', (key,)).fetchone()
     conn.close()
     return jsonify(jload(row['value']) if row else None)
+
 
 @app.route('/api/settings', methods=['POST'])
 def set_setting():
@@ -234,9 +375,12 @@ def set_setting():
 def list_activity():
     limit = int(request.args.get('limit', 100))
     conn  = db()
-    rows  = conn.execute('SELECT * FROM activity ORDER BY timestamp DESC LIMIT ?', (limit,)).fetchall()
+    rows  = conn.execute(
+        'SELECT * FROM activity ORDER BY timestamp DESC LIMIT ?', (limit,)
+    ).fetchall()
     conn.close()
     return jsonify([{**dict(r), 'data': jload(r['data'])} for r in rows])
+
 
 @app.route('/api/activity', methods=['POST'])
 def add_activity():
@@ -252,12 +396,15 @@ def add_activity():
     return jsonify({'ok': True})
 
 
-# ── start ─────────────────────────────────────────────────────────
+# ── start ──────────────────────────────────────────────────────────
 if __name__ == '__main__':
     init_db()
-    print('=' * 48)
-    print('  NumberLand DB Server')
-    print('  http://localhost:5055')
-    print(f'  Database: {DB_PATH}')
-    print('=' * 48)
+    enc_status = "on" if _fernet else "off (set FERNET_KEY to enable)"
+    print('=' * 52)
+    print('  NumberLand DB Server  (powered by nlbone)')
+    print(f'  http://localhost:5055')
+    print(f'  Database : {DB_PATH}')
+    print(f'  Snowflake: DC={_DC} Worker={_WK}')
+    print(f'  Encrypt  : {enc_status}')
+    print('=' * 52)
     app.run(host='127.0.0.1', port=5055, debug=False)

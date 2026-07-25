@@ -45,6 +45,7 @@ const NB_DB = (() => {
         getAllUsers: async ()       => GET('/users'),
 
         // ── Requests ───────────────────────────────────────────
+        // Returns { ok, id } — server assigns a Snowflake ID
         addRequest:   async (r, _silent) => POST('/requests', r),
         getRequests:  async ({ status, search } = {}) => {
             const p = new URLSearchParams();
