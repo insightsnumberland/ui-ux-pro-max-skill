@@ -536,6 +536,18 @@ if (document.getElementById('tab-dashboard')) {
 
         document.getElementById('pp-unit').textContent = toToman(unitPrice) + ' تومان';
 
+        // Subtotal row (unit × qty) — show when qty > 1 or when there's a discount
+        const subtotalRow = document.getElementById('pp-subtotal-row');
+        const subtotalEl  = document.getElementById('pp-subtotal');
+        const subtotalLbl = document.getElementById('pp-subtotal-label');
+        if (qty > 1 || (disc.type !== 'none' && discAmt > 0)) {
+            subtotalRow.style.display = '';
+            subtotalLbl.textContent = qty > 1 ? `جمع (${qty} عدد)` : 'قیمت بدون تخفیف';
+            subtotalEl.textContent = toToman(subtotal) + ' تومان';
+        } else {
+            subtotalRow.style.display = 'none';
+        }
+
         const discRow = document.getElementById('pp-discount-row');
         const discEl = document.getElementById('pp-discount');
         if (disc.type !== 'none' && discAmt > 0) {
