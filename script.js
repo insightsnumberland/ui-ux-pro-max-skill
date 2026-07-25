@@ -30,7 +30,7 @@ const STATUS = {
     REJECTED: 'رد شده'
 };
 
-let requests = JSON.parse(localStorage.getItem('nb_reqs') || '[]');
+let requests = []; // populated from IndexedDB on init
 
 // Toast
 function showToast(msg, type = 'ok') {
@@ -165,7 +165,7 @@ if (document.getElementById('lusername')) {
         }, 1200);
     }
 
-    // ── Register Step 2: OTP verify → login directly ──
+    // ── Register Step 2: OTP verify → save user → login ──
     function doVerifyOtp() {
         const entered = document.getElementById('otp-input').value.trim();
         const err = document.getElementById('otperror');
@@ -178,10 +178,22 @@ if (document.getElementById('lusername')) {
         btn.disabled = true;
         btnTxt.textContent = 'در حال بررسی...';
 
-        setTimeout(() => {
+        setTimeout(async () => {
             if (entered === mockOtp) {
                 err.textContent = '';
-                // ثبت‌نام موفق → مستقیم وارد پنل
+                // Save registration data to IndexedDB
+                try {
+                    await NB_DB.init();
+                    await NB_DB.saveUser({
+                        mobile:  document.getElementById('reg-mobile').value.trim(),
+                        company: document.getElementById('reg-company').value.trim(),
+                        email:   document.getElementById('reg-email').value.trim(),
+                        source:  document.getElementById('reg-source').value,
+                        registered_at: new Date().toLocaleDateString('fa-IR')
+                    });
+                } catch (e) {
+                    console.warn('[NB_DB] saveUser failed:', e);
+                }
                 localStorage.setItem('nb_on', '1');
                 showToast('ثبت‌نام موفقیت‌آمیز بود! در حال ورود به پنل...');
                 setTimeout(() => { window.location.href = 'index.html'; }, 1500);
@@ -224,8 +236,20 @@ if (document.getElementById('tab-dashboard')) {
     let pending = null;
     let selectedModel = null; // 1 | 2 | 3
 
-    // ── Load products from API ──
+    // ── Load products (cache → API) ──
     async function loadProducts() {
+        // Try IndexedDB cache first (30-min TTL)
+        try {
+            const cached = await NB_DB.getCachedProducts(30 * 60 * 1000);
+            if (cached) {
+                if (cached.products?.length)    CATS.products    = cached.products;
+                if (cached.practical?.length)   CATS.practical   = cached.practical;
+                if (cached.intelligence?.length) CATS.intelligence = cached.intelligence;
+                rebuildPmap();
+                console.log('[NB_DB] Products loaded from cache');
+            }
+        } catch (_) {}
+
         try {
             const token = localStorage.getItem('nb_token') || '';
             const headers = { 'Accept': 'application/json' };
@@ -259,13 +283,19 @@ if (document.getElementById('tab-dashboard')) {
             const r = normalizeItems(practArr);
             const i = normalizeItems(intellArr);
 
-            if (p.length) { CATS.products = p;     console.log('[NB] products loaded:', p.length, 'items, first price Rial:', p[0]?.price); }
-            if (r.length) { CATS.practical = r;    console.log('[NB] practical loaded:', r.length, 'items, first price Rial:', r[0]?.price); }
-            if (i.length) { CATS.intelligence = i; console.log('[NB] intelligence loaded:', i.length, 'items, first price Rial:', i[0]?.price); }
+            if (p.length) { CATS.products    = p; }
+            if (r.length) { CATS.practical   = r; }
+            if (i.length) { CATS.intelligence = i; }
 
             rebuildPmap();
+
+            // Cache to IndexedDB
+            try {
+                await NB_DB.cacheProducts({ products: CATS.products, practical: CATS.practical, intelligence: CATS.intelligence });
+            } catch (_) {}
+
         } catch (e) {
-            console.warn('[NB] API fetch failed, using fallback data:', e.message);
+            console.warn('[NB] API fetch failed, using cached/fallback data:', e.message);
         }
     }
 
@@ -294,7 +324,7 @@ if (document.getElementById('tab-dashboard')) {
 
     function selectModel(n) {
         selectedModel = n;
-        // Set qty to model's minimum and update stepper bounds
+        NB_DB.setSetting('selected_model', n).catch(() => {});
         const minQty = MODEL_MIN_QTY[n] || 1;
         const qtyInput = document.getElementById('input-qty');
         if (qtyInput) {
@@ -684,13 +714,12 @@ if (document.getElementById('tab-dashboard')) {
     });
 
     // CONFIRM & SAVE
-    document.getElementById('cfm-btn').addEventListener('click', function () {
+    document.getElementById('cfm-btn').addEventListener('click', async function () {
         if (!pending) return;
         this.disabled = true;
         this.textContent = 'در حال ثبت...';
-        setTimeout(() => {
-            requests.unshift(pending);
-            localStorage.setItem('nb_reqs', JSON.stringify(requests));
+        await NB_DB.addRequest(pending);
+        setTimeout(async () => {
             pending = null;
             document.getElementById('req-form').reset();
             document.getElementById('input-qty').value = 1;
@@ -706,8 +735,8 @@ if (document.getElementById('tab-dashboard')) {
             this.disabled = false;
             this.textContent = 'تأیید و ثبت درخواست';
             showToast('درخواست با موفقیت ثبت شد.');
-            renderDash();
-            renderTable();
+            await renderDash();
+            await renderTable();
             switchTab('request-list');
         }, 850);
     });
@@ -718,9 +747,10 @@ if (document.getElementById('tab-dashboard')) {
     });
 
     // DASHBOARD
-    function renderDash() {
-        document.getElementById('stat-total').textContent = requests.length;
-        document.getElementById('stat-pending').textContent = requests.filter(r => r.status === 'PENDING').length;
+    async function renderDash() {
+        requests = await NB_DB.getRequests();
+        document.getElementById('stat-total').textContent     = requests.length;
+        document.getElementById('stat-pending').textContent   = requests.filter(r => r.status === 'PENDING').length;
         document.getElementById('stat-executing').textContent = requests.filter(r => r.status === 'EXECUTING').length;
         document.getElementById('stat-completed').textContent = requests.filter(r => r.status === 'COMPLETED').length;
         const cnt = document.getElementById('recent-cnt');
@@ -741,15 +771,10 @@ if (document.getElementById('tab-dashboard')) {
     }
 
     // TABLE
-    function renderTable(search = '') {
+    async function renderTable(search = '') {
         const tbody = document.getElementById('tbl-body');
         if (!tbody) return;
-        const s = search.toLowerCase();
-        const filtered = requests.filter(r =>
-            r.id.toLowerCase().includes(s) ||
-            r.product.toLowerCase().includes(s) ||
-            r.email.toLowerCase().includes(s)
-        );
+        const filtered = await NB_DB.getRequests({ search: search || undefined });
         if (filtered.length === 0) {
             tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--text-muted);">رکوردی وجود ندارد.</td></tr>`;
             return;
@@ -775,7 +800,7 @@ if (document.getElementById('tab-dashboard')) {
     }
 
     // SEARCH
-    document.getElementById('search-input').addEventListener('input', function () { renderTable(this.value); });
+    document.getElementById('search-input').addEventListener('input', function () { renderTable(this.value).catch(console.error); });
 
     // DROPZONE
     const dz = document.getElementById('dropzone');
@@ -813,10 +838,14 @@ if (document.getElementById('tab-dashboard')) {
         URL.revokeObjectURL(url);
     }
 
-    // INIT — load products from API then render
+    // INIT
     (async function () {
-        await loadProducts();
-        renderDash();
-        renderTable();
+        await NB_DB.init();           // open IndexedDB + migrate localStorage
+        await loadProducts();         // cache → API
+        await renderDash();
+        await renderTable();
+        // Persist discount model selection across sessions
+        const savedModel = await NB_DB.getSetting('selected_model');
+        if (savedModel) { selectedModel = savedModel; renderModelBanner(); }
     })();
 }
