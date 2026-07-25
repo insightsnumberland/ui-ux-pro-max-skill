@@ -65,8 +65,8 @@ function normalizeItems(arr) {
             price = rialRaw;
         } else if (tomanRaw !== null && typeof tomanRaw === 'number' && tomanRaw > 100) {
             price = tomanRaw * 10; // convert Toman → Rial for internal storage
-        } else if (genericRaw !== null && typeof genericRaw === 'number' && genericRaw > 1000) {
-            price = genericRaw;
+        } else if (genericRaw !== null && typeof genericRaw === 'number' && genericRaw > 100) {
+            price = genericRaw * 10; // API returns Toman → convert to Rial
         }
 
         return {
