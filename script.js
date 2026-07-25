@@ -46,18 +46,32 @@ function showToast(msg, type = 'ok') {
     setTimeout(() => t.remove(), 3500);
 }
 
-// Normalize API product item → {id, name, price}
+// Normalize API product item → {id, name, price (in Rial)}
 function normalizeItems(arr) {
     return (arr || []).map(p => {
-        // Try all common price field names from various API formats
-        const raw = p.price_rial ?? p.unit_price_rial ?? p.b2b_price ??
-                    p.base_price ?? p.amount_rial ?? p.price ?? p.amount ??
-                    p.cost ?? p.value ?? 0;
-        // Values ≤ 1000 are placeholder/sort-order noise, not real prices
-        const price = (typeof raw === 'number' && raw > 1000) ? raw : 0;
+        // Rial-denominated fields (priority)
+        const rialRaw = p.price_rial ?? p.unit_price_rial ?? p.b2b_price ??
+                        p.base_price ?? p.amount_rial ?? p.sell_price_rial ??
+                        p.final_price_rial ?? null;
+        // Toman-denominated fields (×10 → Rial)
+        const tomanRaw = p.price_toman ?? p.toman_price ?? p.sell_price_toman ??
+                         p.final_price_toman ?? null;
+        // Generic / unknown unit fields
+        const genericRaw = p.price ?? p.sell_price ?? p.final_price ??
+                           p.amount ?? p.cost ?? p.value ?? null;
+
+        let price = 0;
+        if (rialRaw !== null && typeof rialRaw === 'number' && rialRaw > 1000) {
+            price = rialRaw;
+        } else if (tomanRaw !== null && typeof tomanRaw === 'number' && tomanRaw > 100) {
+            price = tomanRaw * 10; // convert Toman → Rial for internal storage
+        } else if (genericRaw !== null && typeof genericRaw === 'number' && genericRaw > 1000) {
+            price = genericRaw;
+        }
+
         return {
-            id: p.id,
-            name: p.name || p.title || p.label || '',
+            id: p.id ?? p.product_id,
+            name: p.name || p.title || p.product_name || p.label || '',
             price
         };
     }).filter(p => p.id && p.name);
@@ -213,27 +227,45 @@ if (document.getElementById('tab-dashboard')) {
     // ── Load products from API ──
     async function loadProducts() {
         try {
-            const res = await fetch('https://api.numberland.ir/api/landing-products');
+            const token = localStorage.getItem('nb_token') || '';
+            const headers = { 'Accept': 'application/json' };
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+
+            const res = await fetch('https://api.numberland.ir/api/landing-products', { headers });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const json = await res.json();
-            // DEBUG: log raw API shape — open DevTools Console to inspect
-            console.log('[NB] raw json keys:', Object.keys(json));
-            console.log('[NB] json.data keys:', Object.keys(json.data || {}));
-            const firstProd = (json.data?.products || json.data?.accounts?.practical || [])[0];
-            if (firstProd) console.log('[NB] first product:', JSON.stringify(firstProd));
-            const d = json.data || {};
 
-            const p = normalizeItems(d.products);
-            const r = normalizeItems(d.accounts?.practical);
-            const i = normalizeItems(d.accounts?.intelligence);
+            // ── Full debug dump (open DevTools Console to inspect) ──
+            console.log('[NB] API response keys:', Object.keys(json));
+            const d = json.data || json;
+            console.log('[NB] data keys:', Object.keys(d));
 
-            if (p.length) CATS.products = p;
-            if (r.length) CATS.practical = r;
-            if (i.length) CATS.intelligence = i;
+            // Find products in all common response shapes
+            const findArr = (obj, key) => Array.isArray(obj?.[key]) ? obj[key] : [];
+            const prodArr    = findArr(d, 'products') || findArr(json, 'products');
+            const practArr   = findArr(d?.accounts, 'practical') || findArr(d, 'practical');
+            const intellArr  = findArr(d?.accounts, 'intelligence') || findArr(d, 'intelligence');
+
+            // Log every field of the first product in each category so we can see the price field name
+            [['products', prodArr], ['practical', practArr], ['intelligence', intellArr]].forEach(([cat, arr]) => {
+                if (arr[0]) {
+                    console.log(`[NB] ${cat}[0] all fields:`, JSON.stringify(arr[0], null, 2));
+                } else {
+                    console.log(`[NB] ${cat}: empty or not found`);
+                }
+            });
+
+            const p = normalizeItems(prodArr);
+            const r = normalizeItems(practArr);
+            const i = normalizeItems(intellArr);
+
+            if (p.length) { CATS.products = p;     console.log('[NB] products loaded:', p.length, 'items, first price Rial:', p[0]?.price); }
+            if (r.length) { CATS.practical = r;    console.log('[NB] practical loaded:', r.length, 'items, first price Rial:', r[0]?.price); }
+            if (i.length) { CATS.intelligence = i; console.log('[NB] intelligence loaded:', i.length, 'items, first price Rial:', i[0]?.price); }
 
             rebuildPmap();
         } catch (e) {
-            console.warn('API fetch failed, using fallback data:', e.message);
+            console.warn('[NB] API fetch failed, using fallback data:', e.message);
         }
     }
 
