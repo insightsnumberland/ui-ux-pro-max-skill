@@ -56,8 +56,8 @@ function normalizeItems(arr) {
         // Toman-denominated fields (×10 → Rial)
         const tomanRaw = p.price_toman ?? p.toman_price ?? p.sell_price_toman ??
                          p.final_price_toman ?? null;
-        // Generic / unknown unit fields
-        const genericRaw = p.price ?? p.sell_price ?? p.final_price ??
+        // Generic / unknown unit fields — final_price is the actual selling price
+        const genericRaw = p.final_price ?? p.sell_price ?? p.price ??
                            p.amount ?? p.cost ?? p.value ?? null;
 
         let price = 0;
