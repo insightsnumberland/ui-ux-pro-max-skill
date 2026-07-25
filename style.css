@@ -138,6 +138,17 @@ body.login-page {
   pointer-events: none;
 }
 .iicon svg { width: 15px; height: 15px; }
+.iicon-end {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  display: flex;
+  pointer-events: none;
+}
+.iicon-end svg { width: 14px; height: 14px; }
+select.fi { appearance: none; -webkit-appearance: none; padding-left: 36px; }
 .fi {
   width: 100%;
   background: var(--bg-input);
