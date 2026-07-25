@@ -1,410 +1,319 @@
 """
-NumberLand Local DB Server
-Run:  python server.py
-Deps: pip install flask flask-cors nlbone
+NumberLand B2B Panel — API Server
+Built on nlbone infrastructure: FastAPI + PostgreSQL + SQLAlchemy async
 
-Data is saved to numberland.db (SQLite) next to this file.
+Run:
+    uvicorn server:app --host 127.0.0.1 --port 5055 --reload
 
-nlbone features used:
-  - nlbone.utils.normalize_mobile  — Iranian mobile number normalization
-  - Snowflake ID generation        — distributed unique IDs for requests
-  - Fernet encryption (optional)   — set FERNET_KEY env var to encrypt
-                                     mobile/email at rest in SQLite
+Config (create .env next to this file):
+    POSTGRES_DB_DSN=postgresql+asyncpg://user:pass@localhost:5432/numberland
+    REDIS_URL=redis://localhost:6379/0          # optional, for product cache
+    FERNET_KEY=your-secret-key                 # optional, encrypts mobile/email at rest
+    SNOWFLAKE_WORKER_ID=1
+    SNOWFLAKE_DATACENTER_ID=1
 """
-import base64
-import hashlib
+from __future__ import annotations
+
 import json
-import os
-import sqlite3
-import threading
-import time
-from datetime import datetime, timezone
+from contextlib import asynccontextmanager
+from datetime import datetime
+from typing import Any
 
-from flask import Flask, jsonify, request
-from flask_cors import CORS
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import BigInteger, Column, Integer, String, Text, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-# ── nlbone: mobile normalization ───────────────────────────────────
+# ── nlbone: no duplicate implementations ────────────────────────────
+from nlbone.adapters.db.postgres.base import Base
+from nlbone.adapters.db.postgres.engine import async_session, init_async_engine
+from nlbone.adapters.db.postgres.schema import init_db_async
+from nlbone.adapters.snowflake import SNOWFLAKE
+from nlbone.config.settings import get_settings
+from nlbone.interfaces.api.exception_handlers import install_exception_handlers
+from nlbone.utils.normalize_mobile import normalize_mobile
+
+settings = get_settings()
+
+# ── Optional Fernet encryption via nlbone.utils.crypto ──────────────
 try:
-    from nlbone.utils.normalize_mobile import normalize_mobile as _normalize_mobile
-    def normalize_mobile(mobile: str) -> str:
-        return _normalize_mobile(mobile, strip_zero=False, add_country_code=False)
-except ImportError:
-    import re
-    def normalize_mobile(mobile: str) -> str:
-        if not mobile:
-            return ""
-        mobile = re.sub(r"\D", "", str(mobile))
-        if mobile.startswith("0098"):
-            mobile = mobile[4:]
-        elif mobile.startswith("98") and len(mobile) > 10:
-            mobile = mobile[2:]
-        return mobile
-
-# ── Snowflake ID generator ─────────────────────────────────────────
-# Copied from nlbone.adapters.snowflake (no .env dependency needed here)
-class _Snowflake:
-    WORKER_ID_BITS     = 5
-    DATACENTER_ID_BITS = 5
-    SEQUENCE_BITS      = 12
-    MAX_WORKER_ID      = (1 << WORKER_ID_BITS) - 1       # 31
-    MAX_DATACENTER_ID  = (1 << DATACENTER_ID_BITS) - 1   # 31
-    SEQUENCE_MASK      = (1 << SEQUENCE_BITS) - 1         # 4095
-    WORKER_ID_SHIFT    = SEQUENCE_BITS
-    DATACENTER_ID_SHIFT= SEQUENCE_BITS + WORKER_ID_BITS
-    TIMESTAMP_SHIFT    = SEQUENCE_BITS + WORKER_ID_BITS + DATACENTER_ID_BITS
-    EPOCH              = int(datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp() * 1000)
-
-    def __init__(self, datacenter_id=1, worker_id=1):
-        self.datacenter_id = max(0, min(datacenter_id, self.MAX_DATACENTER_ID))
-        self.worker_id     = max(0, min(worker_id,     self.MAX_WORKER_ID))
-        self.sequence      = 0
-        self.last_ts       = -1
-        self._lock         = threading.Lock()
-
-    def _ts(self) -> int:
-        return int(time.time() * 1000)
-
-    def _wait(self, last: int) -> int:
-        ts = self._ts()
-        while ts <= last:
-            ts = self._ts()
-        return ts
-
-    def next_id(self) -> str:
-        with self._lock:
-            ts = self._ts()
-            if ts < self.last_ts:
-                ts = self._wait(self.last_ts)
-            if ts == self.last_ts:
-                self.sequence = (self.sequence + 1) & self.SEQUENCE_MASK
-                if self.sequence == 0:
-                    ts = self._wait(self.last_ts)
-            else:
-                self.sequence = 0
-            self.last_ts = ts
-            sf = (
-                ((ts - self.EPOCH) << self.TIMESTAMP_SHIFT)
-                | (self.datacenter_id << self.DATACENTER_ID_SHIFT)
-                | (self.worker_id     << self.WORKER_ID_SHIFT)
-                | self.sequence
-            )
-            return str(sf)
-
-_DC = int(os.environ.get("SNOWFLAKE_DATACENTER_ID", "1"))
-_WK = int(os.environ.get("SNOWFLAKE_WORKER_ID", "1"))
-SNOWFLAKE = _Snowflake(datacenter_id=_DC, worker_id=_WK)
-
-# ── Fernet encryption (optional) ───────────────────────────────────
-_fernet = None
-_fernet_key = os.environ.get("FERNET_KEY", "").strip()
-if _fernet_key:
-    try:
-        from cryptography.fernet import Fernet
-        _key_bytes = base64.urlsafe_b64encode(hashlib.sha256(_fernet_key.encode()).digest())
-        _fernet    = Fernet(_key_bytes)
-        print("[nlbone] Fernet encryption enabled.")
-    except ImportError:
-        print("[nlbone] cryptography not installed — Fernet disabled.")
-
-def _enc(text: str) -> str:
-    if _fernet and text:
-        return _fernet.encrypt(text.encode()).decode()
-    return text or ""
-
-def _dec(token: str) -> str:
-    if _fernet and token:
-        try:
-            return _fernet.decrypt(token.encode()).decode()
-        except Exception:
-            return token
-    return token or ""
+    from nlbone.utils.crypto import decrypt_text as _dec_raw, encrypt_text as _enc_raw
+    _enc = _enc_raw
+    _dec = _dec_raw
+except Exception:
+    _enc = lambda x: x or ""   # noqa: E731
+    _dec = lambda x: x or ""   # noqa: E731
 
 
-# ── Flask app ──────────────────────────────────────────────────────
-app     = Flask(__name__)
-CORS(app)
-DB_PATH = os.path.join(os.path.dirname(__file__), 'numberland.db')
+# ══════════════════════════════════════════════════════════════════
+# SQLAlchemy models  (extend nlbone's Base — same metadata/engine)
+# ══════════════════════════════════════════════════════════════════
+class User(Base):
+    __tablename__ = "nb_panel_users"
+    id            = Column(Integer, primary_key=True, autoincrement=True)
+    mobile        = Column(String(64),  unique=True, index=True)
+    email         = Column(String(256))
+    company       = Column(String(256))
+    source        = Column(String(64))
+    registered_at = Column(String(32))
+    created_at    = Column(BigInteger)
 
 
-# ── helpers ────────────────────────────────────────────────────────
-def db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+class Request(Base):
+    __tablename__ = "nb_panel_requests"
+    id         = Column(String(32), primary_key=True)
+    product    = Column(Text)
+    email      = Column(String(256))
+    quantity   = Column(Integer)
+    status     = Column(String(32), default="PENDING", index=True)
+    date       = Column(String(32))
+    saved_at   = Column(BigInteger, index=True)
+    updated_at = Column(BigInteger)
+    data       = Column(Text)  # full JSON blob
 
+
+class Setting(Base):
+    __tablename__ = "nb_panel_settings"
+    key        = Column(String(128), primary_key=True)
+    value      = Column(Text)
+    updated_at = Column(BigInteger)
+
+
+class Activity(Base):
+    __tablename__ = "nb_panel_activity"
+    id        = Column(Integer, primary_key=True, autoincrement=True)
+    action    = Column(String(128))
+    data      = Column(Text)
+    timestamp = Column(BigInteger, index=True)
+    date      = Column(String(16))
+
+
+class ProductCache(Base):
+    __tablename__ = "nb_panel_products_cache"
+    ckey      = Column(String(128), primary_key=True)
+    category  = Column(String(64))
+    cached_at = Column(BigInteger)
+    data      = Column(Text)
+
+
+# ══════════════════════════════════════════════════════════════════
+# App  (lifespan creates schema via nlbone's init_db_async)
+# ══════════════════════════════════════════════════════════════════
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_async_engine()
+    await init_db_async()  # creates tables from nlbone's Base.metadata
+    yield
+
+
+app = FastAPI(title="NumberLand B2B Panel", lifespan=lifespan)
+install_exception_handlers(app)  # nlbone's standard error responses
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ── helpers ──────────────────────────────────────────────────────────
 def now_ms() -> int:
     return int(datetime.now().timestamp() * 1000)
 
-def jdump(v) -> str:
+def jdump(v: Any) -> str:
     return json.dumps(v, ensure_ascii=False)
 
-def jload(s):
-    try:    return json.loads(s)
+def jload(s: str | None) -> Any:
+    try:    return json.loads(s) if s else None
     except: return s
-
-
-# ── init schema ────────────────────────────────────────────────────
-def init_db():
-    conn = db()
-    conn.executescript('''
-        CREATE TABLE IF NOT EXISTS users (
-            id            INTEGER PRIMARY KEY AUTOINCREMENT,
-            mobile        TEXT UNIQUE,
-            email         TEXT,
-            company       TEXT,
-            source        TEXT,
-            registered_at TEXT,
-            created_at    INTEGER
-        );
-
-        CREATE TABLE IF NOT EXISTS requests (
-            id         TEXT PRIMARY KEY,
-            product    TEXT,
-            email      TEXT,
-            quantity   INTEGER,
-            status     TEXT DEFAULT "PENDING",
-            date       TEXT,
-            saved_at   INTEGER,
-            updated_at INTEGER,
-            data       TEXT
-        );
-        CREATE INDEX IF NOT EXISTS idx_req_status   ON requests(status);
-        CREATE INDEX IF NOT EXISTS idx_req_saved_at ON requests(saved_at);
-
-        CREATE TABLE IF NOT EXISTS products (
-            ckey       TEXT PRIMARY KEY,
-            category   TEXT,
-            cached_at  INTEGER,
-            data       TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS settings (
-            key        TEXT PRIMARY KEY,
-            value      TEXT,
-            updated_at INTEGER
-        );
-
-        CREATE TABLE IF NOT EXISTS activity (
-            id        INTEGER PRIMARY KEY AUTOINCREMENT,
-            action    TEXT,
-            data      TEXT,
-            timestamp INTEGER,
-            date      TEXT
-        );
-        CREATE INDEX IF NOT EXISTS idx_act_ts ON activity(timestamp);
-    ''')
-    conn.commit()
-    conn.close()
 
 
 # ══════════════════════════════════════════════════════════════════
 # USERS
 # ══════════════════════════════════════════════════════════════════
-@app.route('/api/users', methods=['GET'])
-def list_users():
-    conn = db()
-    rows = conn.execute('SELECT * FROM users ORDER BY created_at DESC').fetchall()
-    conn.close()
-    result = []
-    for r in rows:
-        row = dict(r)
-        row['mobile'] = _dec(row['mobile'])
-        row['email']  = _dec(row['email'])
-        result.append(row)
-    return jsonify(result)
+@app.get("/api/users")
+async def list_users():
+    async with async_session() as s:
+        rows = (await s.execute(select(User).order_by(User.created_at.desc()))).scalars().all()
+    return [
+        {**{c: getattr(r, c) for c in User.__table__.columns.keys()},
+         "mobile": _dec(r.mobile), "email": _dec(r.email)}
+        for r in rows
+    ]
 
 
-@app.route('/api/users', methods=['POST'])
-def add_user():
-    d      = request.json or {}
-    raw_mobile = d.get('mobile', '')
-    mobile = normalize_mobile(raw_mobile)   # nlbone: normalize Iranian number
-    email  = d.get('email', '')
-    conn   = db()
-    try:
-        conn.execute(
-            'INSERT OR IGNORE INTO users '
-            '(mobile, email, company, source, registered_at, created_at) '
-            'VALUES (?,?,?,?,?,?)',
-            (_enc(mobile), _enc(email),
-             d.get('company'), d.get('source'),
-             d.get('registered_at'), now_ms())
-        )
-        conn.commit()
-        # look up by encrypted mobile
-        row = conn.execute(
-            'SELECT id FROM users WHERE mobile=?', (_enc(mobile),)
-        ).fetchone()
-        conn.close()
-        return jsonify({'id': row['id'] if row else None, 'mobile': mobile})
-    except Exception as e:
-        conn.close()
-        return jsonify({'error': str(e)}), 400
+@app.post("/api/users")
+async def add_user(body: dict):
+    # nlbone: normalize_mobile cleans Iranian numbers (strips +, 0098, spaces)
+    mobile = normalize_mobile(body.get("mobile", ""), strip_zero=False, add_country_code=False)
+    email  = body.get("email", "")
+    async with async_session() as s:
+        existing = (await s.execute(select(User).where(User.mobile == _enc(mobile)))).scalar_one_or_none()
+        if not existing:
+            s.add(User(
+                mobile=_enc(mobile), email=_enc(email),
+                company=body.get("company"), source=body.get("source"),
+                registered_at=body.get("registered_at"), created_at=now_ms(),
+            ))
+            await s.commit()
+            result = (await s.execute(select(User).where(User.mobile == _enc(mobile)))).scalar_one_or_none()
+            return {"id": result.id if result else None, "mobile": mobile}
+        return {"id": existing.id, "mobile": mobile}
 
 
 # ══════════════════════════════════════════════════════════════════
 # REQUESTS
 # ══════════════════════════════════════════════════════════════════
-@app.route('/api/requests', methods=['GET'])
-def list_requests():
-    status = request.args.get('status')
-    search = (request.args.get('search') or '').lower()
-    conn   = db()
-    rows   = conn.execute('SELECT data FROM requests ORDER BY saved_at DESC').fetchall()
-    conn.close()
-    items = [jload(r['data']) for r in rows]
-    if status: items = [r for r in items if r.get('status') == status]
+@app.get("/api/requests")
+async def list_requests(
+    status: str | None = Query(None),
+    search: str | None = Query(None),
+):
+    async with async_session() as s:
+        rows = (await s.execute(select(Request).order_by(Request.saved_at.desc()))).scalars().all()
+    items = [jload(r.data) for r in rows]
+    if status: items = [r for r in items if r and r.get("status") == status]
     if search:
-        items = [r for r in items if
-                 search in (r.get('id')      or '').lower() or
-                 search in (r.get('product') or '').lower() or
-                 search in (r.get('email')   or '').lower()]
-    return jsonify(items)
+        q = search.lower()
+        items = [r for r in items if r and (
+            q in (r.get("id") or "").lower() or
+            q in (r.get("product") or "").lower() or
+            q in (r.get("email") or "").lower()
+        )]
+    return items
 
 
-@app.route('/api/requests', methods=['POST'])
-def add_request():
-    d  = request.json or {}
-    # ── Snowflake: server generates the canonical ID ──────────────
-    req_id = SNOWFLAKE.next_id()
-    d['id'] = req_id
-    # ─────────────────────────────────────────────────────────────
+@app.post("/api/requests")
+async def add_request(body: dict):
+    # nlbone SNOWFLAKE: distributed unique ID (no client-side REQ-timestamp)
+    req_id = str(SNOWFLAKE.next_id())
+    body["id"] = req_id
     ts = now_ms()
-    conn = db()
-    conn.execute(
-        '''INSERT OR REPLACE INTO requests
-           (id, product, email, quantity, status, date, saved_at, data)
-           VALUES (?,?,?,?,?,?,?,?)''',
-        (req_id, d.get('product'), d.get('email'), d.get('quantity'),
-         d.get('status', 'PENDING'), d.get('date'), ts, jdump(d))
-    )
-    conn.commit()
-    conn.close()
-    return jsonify({'ok': True, 'id': req_id})
+    async with async_session() as s:
+        s.add(Request(
+            id=req_id,
+            product=body.get("product"),
+            email=body.get("email"),
+            quantity=body.get("quantity"),
+            status=body.get("status", "PENDING"),
+            date=body.get("date"),
+            saved_at=ts,
+            data=jdump(body),
+        ))
+        await s.commit()
+    return {"ok": True, "id": req_id}
 
 
-@app.route('/api/requests/<req_id>', methods=['PATCH'])
-def update_request(req_id):
-    updates = request.json or {}
-    conn    = db()
-    row     = conn.execute('SELECT data FROM requests WHERE id=?', (req_id,)).fetchone()
-    if not row:
-        conn.close()
-        return jsonify({'error': 'not found'}), 404
-    rec = jload(row['data'])
-    rec.update(updates)
-    rec['updated_at'] = now_ms()
-    conn.execute(
-        'UPDATE requests SET status=?, updated_at=?, data=? WHERE id=?',
-        (rec.get('status'), rec['updated_at'], jdump(rec), req_id)
-    )
-    conn.commit()
-    conn.close()
-    return jsonify({'ok': True})
+@app.patch("/api/requests/{req_id}")
+async def update_request(req_id: str, body: dict):
+    async with async_session() as s:
+        req = (await s.execute(select(Request).where(Request.id == req_id))).scalar_one_or_none()
+        if not req:
+            raise HTTPException(404, "not found")
+        rec = jload(req.data) or {}
+        rec.update(body)
+        rec["updated_at"] = now_ms()
+        req.status     = rec.get("status")
+        req.updated_at = rec["updated_at"]
+        req.data       = jdump(rec)
+        await s.commit()
+    return {"ok": True}
 
 
 # ══════════════════════════════════════════════════════════════════
 # PRODUCTS CACHE
 # ══════════════════════════════════════════════════════════════════
-@app.route('/api/products/cache', methods=['POST'])
-def cache_products():
-    cats = request.json or {}
-    conn = db()
-    ts   = now_ms()
-    for cat, items in cats.items():
-        for p in items:
-            ckey = f"{cat}:{p.get('id')}"
-            conn.execute(
-                'INSERT OR REPLACE INTO products (ckey, category, cached_at, data) '
-                'VALUES (?,?,?,?)',
-                (ckey, cat, ts, jdump(p))
-            )
-    conn.commit()
-    conn.close()
-    return jsonify({'ok': True})
+@app.post("/api/products/cache")
+async def cache_products(body: dict):
+    ts = now_ms()
+    async with async_session() as s:
+        for cat, items in body.items():
+            for p in items:
+                ckey = f"{cat}:{p.get('id')}"
+                row = (await s.execute(select(ProductCache).where(ProductCache.ckey == ckey))).scalar_one_or_none()
+                if row:
+                    row.cached_at = ts
+                    row.data      = jdump(p)
+                else:
+                    s.add(ProductCache(ckey=ckey, category=cat, cached_at=ts, data=jdump(p)))
+        await s.commit()
+    return {"ok": True}
 
 
-@app.route('/api/products/cache', methods=['GET'])
-def get_product_cache():
-    max_age = int(request.args.get('maxAge', 30 * 60 * 1000))
-    cutoff  = now_ms() - max_age
-    conn    = db()
-    rows    = conn.execute(
-        'SELECT * FROM products WHERE cached_at > ?', (cutoff,)
-    ).fetchall()
-    conn.close()
+@app.get("/api/products/cache")
+async def get_product_cache(maxAge: int = Query(30 * 60 * 1000)):
+    cutoff = now_ms() - maxAge
+    async with async_session() as s:
+        rows = (await s.execute(
+            select(ProductCache).where(ProductCache.cached_at > cutoff)
+        )).scalars().all()
     if not rows:
-        return jsonify(None)
-    result = {}
+        return None
+    out: dict[str, list] = {}
     for r in rows:
-        cat = r['category']
-        if cat not in result:
-            result[cat] = []
-        result[cat].append(jload(r['data']))
-    return jsonify(result)
+        out.setdefault(r.category, []).append(jload(r.data))
+    return out
 
 
 # ══════════════════════════════════════════════════════════════════
 # SETTINGS
 # ══════════════════════════════════════════════════════════════════
-@app.route('/api/settings/<key>', methods=['GET'])
-def get_setting(key):
-    conn = db()
-    row  = conn.execute('SELECT value FROM settings WHERE key=?', (key,)).fetchone()
-    conn.close()
-    return jsonify(jload(row['value']) if row else None)
+@app.get("/api/settings/{key}")
+async def get_setting(key: str):
+    async with async_session() as s:
+        row = (await s.execute(select(Setting).where(Setting.key == key))).scalar_one_or_none()
+    return jload(row.value) if row else None
 
 
-@app.route('/api/settings', methods=['POST'])
-def set_setting():
-    d = request.json or {}
-    conn = db()
-    conn.execute(
-        'INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?,?,?)',
-        (d.get('key'), jdump(d.get('value')), now_ms())
-    )
-    conn.commit()
-    conn.close()
-    return jsonify({'ok': True})
+@app.post("/api/settings")
+async def set_setting(body: dict):
+    async with async_session() as s:
+        row = (await s.execute(select(Setting).where(Setting.key == body.get("key")))).scalar_one_or_none()
+        if row:
+            row.value      = jdump(body.get("value"))
+            row.updated_at = now_ms()
+        else:
+            s.add(Setting(key=body.get("key"), value=jdump(body.get("value")), updated_at=now_ms()))
+        await s.commit()
+    return {"ok": True}
 
 
 # ══════════════════════════════════════════════════════════════════
 # ACTIVITY LOG
 # ══════════════════════════════════════════════════════════════════
-@app.route('/api/activity', methods=['GET'])
-def list_activity():
-    limit = int(request.args.get('limit', 100))
-    conn  = db()
-    rows  = conn.execute(
-        'SELECT * FROM activity ORDER BY timestamp DESC LIMIT ?', (limit,)
-    ).fetchall()
-    conn.close()
-    return jsonify([{**dict(r), 'data': jload(r['data'])} for r in rows])
+@app.get("/api/activity")
+async def list_activity(limit: int = Query(100)):
+    async with async_session() as s:
+        rows = (await s.execute(
+            select(Activity).order_by(Activity.timestamp.desc()).limit(limit)
+        )).scalars().all()
+    return [
+        {**{c: getattr(r, c) for c in Activity.__table__.columns.keys()},
+         "data": jload(r.data)}
+        for r in rows
+    ]
 
 
-@app.route('/api/activity', methods=['POST'])
-def add_activity():
-    d = request.json or {}
-    conn = db()
-    conn.execute(
-        'INSERT INTO activity (action, data, timestamp, date) VALUES (?,?,?,?)',
-        (d.get('action'), jdump(d.get('data', {})), now_ms(),
-         datetime.now().strftime('%Y-%m-%d'))
-    )
-    conn.commit()
-    conn.close()
-    return jsonify({'ok': True})
+@app.post("/api/activity")
+async def add_activity(body: dict):
+    async with async_session() as s:
+        s.add(Activity(
+            action=body.get("action"),
+            data=jdump(body.get("data", {})),
+            timestamp=now_ms(),
+            date=datetime.now().strftime("%Y-%m-%d"),
+        ))
+        await s.commit()
+    return {"ok": True}
 
 
-# ── start ──────────────────────────────────────────────────────────
-if __name__ == '__main__':
-    init_db()
-    enc_status = "on" if _fernet else "off (set FERNET_KEY to enable)"
-    print('=' * 52)
-    print('  NumberLand DB Server  (powered by nlbone)')
-    print(f'  http://localhost:5055')
-    print(f'  Database : {DB_PATH}')
-    print(f'  Snowflake: DC={_DC} Worker={_WK}')
-    print(f'  Encrypt  : {enc_status}')
-    print('=' * 52)
-    app.run(host='127.0.0.1', port=5055, debug=False)
+# ── entry point ───────────────────────────────────────────────────
+if __name__ == "__main__":
+    import uvicorn
+    print("=" * 56)
+    print("  NumberLand B2B Panel  (nlbone stack)")
+    print("  http://127.0.0.1:5055")
+    print(f"  DB : {settings.POSTGRES_DB_DSN[:55]}")
+    print(f"  ENV: {settings.ENV}")
+    print("=" * 56)
+    uvicorn.run("server:app", host="127.0.0.1", port=5055, reload=False)
